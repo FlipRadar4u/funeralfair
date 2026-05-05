@@ -1,0 +1,307 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
+import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
+
+const BENEFITS = [
+  {
+    icon: (
+      <svg className="w-5 h-5 text-sage" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+      </svg>
+    ),
+    title: 'Be seen by families actively searching',
+    desc: 'People come to FuneralFair at the moment they need help most. Your listing puts you in front of them — no cold leads.',
+  },
+  {
+    icon: (
+      <svg className="w-5 h-5 text-sage" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+      </svg>
+    ),
+    title: 'Transparent pricing builds trust',
+    desc: 'Families feel more confident contacting directors who are open about costs. Your pricing is already public — own it.',
+  },
+  {
+    icon: (
+      <svg className="w-5 h-5 text-sage" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+      </svg>
+    ),
+    title: 'Keep your details up to date',
+    desc: 'Claim your listing and you control your prices, contact details and photos — always accurate, always yours.',
+  },
+]
+
+const TIERS = [
+  {
+    name: 'Free listing',
+    price: '£0',
+    period: 'forever',
+    features: [
+      'Listed in local search results',
+      'Prices shown from your Standardised Price List',
+      'Contact details displayed',
+      'Claim & verify your listing',
+    ],
+    cta: 'Claim your free listing',
+    highlight: false,
+  },
+  {
+    name: 'Featured listing',
+    price: '£49',
+    period: 'per month',
+    features: [
+      'Everything in Free',
+      'Pinned to the top of local search results',
+      'Featured badge on your card',
+      'Photo gallery',
+      'Direct enquiry form',
+      'Priority support',
+    ],
+    cta: 'Apply for Featured',
+    highlight: true,
+  },
+]
+
+function TierCard({ tier }) {
+  return (
+    <div className={`rounded-2xl border p-8 flex flex-col gap-5 ${tier.highlight ? 'border-sage ring-1 ring-sage bg-white' : 'border-warm-border bg-white'}`}>
+      {tier.highlight && (
+        <span className="self-start text-xs font-semibold px-3 py-1 rounded-full bg-sage text-white tracking-wide">
+          Most popular
+        </span>
+      )}
+      <div>
+        <p className="text-sm font-medium text-muted mb-1">{tier.name}</p>
+        <p className="text-4xl font-bold text-charcoal">
+          {tier.price}
+          <span className="text-base font-normal text-muted ml-1">/ {tier.period}</span>
+        </p>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {tier.features.map(f => (
+          <li key={f} className="flex items-start gap-2.5 text-sm text-charcoal">
+            <svg className="w-4 h-4 text-sage shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            {f}
+          </li>
+        ))}
+      </ul>
+      <a
+        href="#apply"
+        className={`mt-auto w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors duration-150 ${
+          tier.highlight
+            ? 'bg-sage hover:bg-sage-dark text-white'
+            : 'border-2 border-sage text-sage hover:bg-sage-light'
+        }`}
+      >
+        {tier.cta}
+      </a>
+    </div>
+  )
+}
+
+export default function ForFuneralDirectors() {
+  const [form, setForm] = useState({
+    business_name: '',
+    contact_name: '',
+    email: '',
+    phone: '',
+    postcode: '',
+    website: '',
+    message: '',
+  })
+  const [status, setStatus] = useState(null) // null | 'sending' | 'success' | 'error'
+
+  function handleChange(e) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setStatus('sending')
+    const { error } = await supabase.from('listing_applications').insert([form])
+    if (error) {
+      setStatus('error')
+    } else {
+      setStatus('success')
+      setForm({ business_name: '', contact_name: '', email: '', phone: '', postcode: '', website: '', message: '' })
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-cream">
+      <Navbar />
+
+      {/* ── Hero ── */}
+      <section className="flex flex-col items-center text-center px-4 sm:px-6 pt-20 pb-20 sm:pt-28 sm:pb-24">
+        <span className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full bg-sage-light border border-sage-border text-sage text-xs font-semibold tracking-widest uppercase">
+          For funeral directors
+        </span>
+        <h1 className="text-4xl sm:text-5xl font-bold text-charcoal leading-tight max-w-2xl mb-5">
+          Your prices are already being compared.
+        </h1>
+        <p className="text-lg text-muted max-w-xl leading-relaxed mb-8">
+          Families in your area are using FuneralFair right now to find a funeral director they can trust.
+          Claim your free listing so they find accurate information — and find you.
+        </p>
+        <a
+          href="#apply"
+          className="px-8 py-3.5 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl transition-colors duration-150 shadow-sm text-base"
+        >
+          Claim your free listing
+        </a>
+      </section>
+
+      {/* ── Benefits ── */}
+      <section className="bg-white border-t border-warm-border px-4 sm:px-6 py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-charcoal mb-3">Why list on FuneralFair?</h2>
+            <p className="text-muted max-w-md mx-auto">We're building the most trusted funeral price comparison site in the UK — and we want independent directors at the heart of it.</p>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-8">
+            {BENEFITS.map(({ icon, title, desc }) => (
+              <div key={title} className="flex flex-col items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-sage-light border border-sage-border flex items-center justify-center">
+                  {icon}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-1.5">{title}</h3>
+                  <p className="text-sm text-muted leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section className="px-4 sm:px-6 py-20 bg-cream">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-charcoal mb-3">Simple, honest pricing</h2>
+            <p className="text-muted">Start free. Upgrade when you're ready.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {TIERS.map(tier => <TierCard key={tier.name} tier={tier} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Application form ── */}
+      <section id="apply" className="bg-white border-t border-warm-border px-4 sm:px-6 py-20">
+        <div className="max-w-xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-charcoal mb-3">Apply to list your business</h2>
+            <p className="text-muted text-sm leading-relaxed">
+              Fill in your details and we'll be in touch within 2 working days.
+              Already listed? Use the same form to claim your listing.
+            </p>
+          </div>
+
+          {status === 'success' ? (
+            <div className="rounded-2xl bg-sage-light border border-sage-border px-8 py-12 text-center">
+              <svg className="w-10 h-10 text-sage mx-auto mb-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-charcoal mb-2">Application received</h3>
+              <p className="text-muted text-sm leading-relaxed">
+                Thank you — we'll review your details and be in touch within 2 working days.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Business name <span className="text-red-400">*</span></label>
+                  <input
+                    name="business_name" required value={form.business_name} onChange={handleChange}
+                    placeholder="e.g. Smith & Sons Funeral Directors"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
+                  <input
+                    name="contact_name" required value={form.contact_name} onChange={handleChange}
+                    placeholder="e.g. John Smith"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Email <span className="text-red-400">*</span></label>
+                  <input
+                    name="email" type="email" required value={form.email} onChange={handleChange}
+                    placeholder="you@yourbusiness.co.uk"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Phone</label>
+                  <input
+                    name="phone" type="tel" value={form.phone} onChange={handleChange}
+                    placeholder="e.g. 0151 123 4567"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Postcode</label>
+                  <input
+                    name="postcode" value={form.postcode} onChange={handleChange}
+                    placeholder="e.g. L1 1AA"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Website</label>
+                  <input
+                    name="website" type="url" value={form.website} onChange={handleChange}
+                    placeholder="https://yourwebsite.co.uk"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-charcoal">Anything else you'd like us to know?</label>
+                <textarea
+                  name="message" value={form.message} onChange={handleChange} rows={4}
+                  placeholder="e.g. I'm already listed and want to claim my listing, or I'd like to discuss the Featured plan..."
+                  className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage resize-none"
+                />
+              </div>
+
+              {status === 'error' && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  Something went wrong. Please try again or email us directly.
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={status === 'sending'}
+                className="w-full py-3.5 bg-sage hover:bg-sage-dark disabled:opacity-60 text-white font-semibold rounded-xl transition-colors duration-150 text-base"
+              >
+                {status === 'sending' ? 'Sending…' : 'Submit application'}
+              </button>
+
+              <p className="text-xs text-muted text-center leading-relaxed">
+                We'll never share your details with third parties. By submitting you agree to be contacted about your listing.
+              </p>
+            </form>
+          )}
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  )
+}

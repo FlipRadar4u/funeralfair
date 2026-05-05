@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Explicitly tell Tailwind where to scan for class names */
+@source "./**/*.{js,jsx}";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --color-cream:      #faf8f6;
+  --color-charcoal:   #2d2d2d;
+  --color-charcoal-soft: #4a4a4a;
+  --color-sage:       #7a9e7e;
+  --color-sage-dark:  #6a8e6e;
+  --color-sage-light: #eef3ee;
+  --color-sage-border: #c8dcc9;
+  --color-warm-border: #e5e0db;
+  --color-muted:      #6b7280;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #faf8f6;
+  color: #2d2d2d;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Page enter animation */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: pageFadeIn 220ms ease forwards;
+}
+
+@layer base {
+  /* Eliminate 300ms tap delay on mobile */
+  a, button, input, textarea, select, label {
+    touch-action: manipulation;
+  }
+
+  /* Smooth transitions on interactive elements */
+  a, button {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform, text-decoration-color;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  /* Clean focus ring */
+  :focus-visible {
+    outline: 2px solid var(--color-sage);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  /* Input focus transitions */
+  input, textarea, select {
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+}
+
+/* Smooth card hover lift */
+.card-hover {
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.card-hover:hover {
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.10);
+  transform: translateY(-2px);
+}
