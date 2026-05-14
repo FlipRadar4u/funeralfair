@@ -1,13 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-
-const TRUST_SIGNALS = [
-  { stat: '5,000+', label: 'funeral directors listed' },
-  { stat: 'Legally required', label: 'pricing data only' },
-  { stat: '100% free', label: 'to use, always' },
-]
 
 const STEPS = [
   {
@@ -52,7 +47,21 @@ function CheckIcon() {
 
 export default function Home() {
   const [location, setLocation] = useState('')
+  const [directorCount, setDirectorCount] = useState(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    supabase
+      .from('funeral_directors')
+      .select('*', { count: 'exact', head: true })
+      .then(({ count }) => { if (count != null) setDirectorCount(count) })
+  }, [])
+
+  const trustSignals = [
+    { stat: directorCount != null ? `${directorCount}` : '…', label: 'funeral directors listed' },
+    { stat: 'Legally required', label: 'pricing data only' },
+    { stat: '100% free', label: 'to use, always' },
+  ]
 
   function handleSearch(e) {
     e.preventDefault()
@@ -118,7 +127,7 @@ export default function Home() {
 
         {/* Trust signals — always 3 columns so it never stacks tall on mobile */}
         <div className="grid grid-cols-3 divide-x divide-warm-border border border-warm-border rounded-2xl overflow-hidden bg-white/70 backdrop-blur-sm shadow-sm w-full max-w-lg">
-          {TRUST_SIGNALS.map(({ stat, label }) => (
+          {trustSignals.map(({ stat, label }) => (
             <div key={stat} className="px-3 py-3.5 text-center">
               <p className="text-base sm:text-lg font-bold text-charcoal leading-none mb-1">{stat}</p>
               <p className="text-xs text-muted leading-snug">{label}</p>
