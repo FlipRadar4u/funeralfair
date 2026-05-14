@@ -254,72 +254,75 @@ export default function SearchResults() {
       setSearchMode(null)
       setLoadingLabel('Looking up postcode…')
 
-      // ── Step 1: try to geocode the search input ──────────────────────────
-      const userCoords = await geocodeInput(location)
-
-      if (cancelled) return
-
-      if (userCoords) {
-        // ── Proximity search ────────────────────────────────────────────────
-        setLoadingLabel('Finding nearby funeral directors…')
-
-        const { data, error } = await supabase
-          .from('funeral_directors')
-          .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member, is_featured')
-
-        if (cancelled) return
-        if (error) { setFetchError(error.message); setLoading(false); return }
-
-        const directors = data ?? []
-
-        // Step 1: bulk-geocode full postcodes
-        const postcodes    = [...new Set(directors.map(d => d.postcode).filter(Boolean))]
-        const fullGeocoded = await bulkGeocodePostcodes(postcodes)
-
-        // Step 2: for any that failed, try the outcode (e.g. "L1" from "L1 1AA")
-        const needOutcode    = directors.filter(d => d.postcode && !fullGeocoded[d.postcode])
-        const uniqueOutcodes = [...new Set(needOutcode.map(d => extractOutcode(d.postcode)).filter(Boolean))]
-        const outcodeGeocoded = await geocodeOutcodes(uniqueOutcodes)
+      try {
+        // ── Step 1: try to geocode the search input ────────────────────────
+        const userCoords = await geocodeInput(location)
 
         if (cancelled) return
 
-        // Calculate distance — prefer full postcode coords, fall back to outcode
-        // Featured directors are sorted first, then by distance within each group
-        const withDist = directors
-          .map(d => {
-            const coords = fullGeocoded[d.postcode] ?? outcodeGeocoded[extractOutcode(d.postcode)]
-            if (!coords) return null
-            const miles = haversineMiles(userCoords.lat, userCoords.lng, coords.lat, coords.lng)
-            return { ...d, _miles: miles }
-          })
-          .filter(d => d !== null && d._miles <= RADIUS_MILES)
-          .sort((a, b) => {
-            if (a.is_featured && !b.is_featured) return -1
-            if (!a.is_featured && b.is_featured) return 1
-            return a._miles - b._miles
-          })
+        if (userCoords) {
+          // ── Proximity search ──────────────────────────────────────────────
+          setLoadingLabel('Finding nearby funeral directors…')
 
-        setResults(withDist)
-        setSearchMode('proximity')
+          const { data, error } = await supabase
+            .from('funeral_directors')
+            .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member, is_featured')
 
-      } else {
-        // ── Text search fallback (town / postcode string match) ─────────────
-        setLoadingLabel('Searching…')
+          if (cancelled) return
+          if (error) { setFetchError(error.message); return }
 
-        const { data, error } = await supabase
-          .from('funeral_directors')
-          .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member, is_featured')
-          .or(`town.ilike.%${location}%,postcode.ilike.%${location}%`)
-          .order('is_featured', { ascending: false })
-          .order('attended_price', { ascending: true })
+          const directors = data ?? []
 
-        if (cancelled) return
-        if (error) setFetchError(error.message)
-        else setResults(data ?? [])
-        setSearchMode('text')
+          // Bulk-geocode full postcodes
+          const postcodes     = [...new Set(directors.map(d => d.postcode).filter(Boolean))]
+          const fullGeocoded  = await bulkGeocodePostcodes(postcodes)
+
+          // Fall back to outcode for any that didn't geocode
+          const needOutcode    = directors.filter(d => d.postcode && !fullGeocoded[d.postcode])
+          const uniqueOutcodes = [...new Set(needOutcode.map(d => extractOutcode(d.postcode)).filter(Boolean))]
+          const outcodeGeocoded = await geocodeOutcodes(uniqueOutcodes)
+
+          if (cancelled) return
+
+          // Featured first, then by distance
+          const withDist = directors
+            .map(d => {
+              const coords = fullGeocoded[d.postcode] ?? outcodeGeocoded[extractOutcode(d.postcode)]
+              if (!coords) return null
+              const miles = haversineMiles(userCoords.lat, userCoords.lng, coords.lat, coords.lng)
+              return { ...d, _miles: miles }
+            })
+            .filter(d => d !== null && d._miles <= RADIUS_MILES)
+            .sort((a, b) => {
+              if (a.is_featured && !b.is_featured) return -1
+              if (!a.is_featured && b.is_featured) return 1
+              return a._miles - b._miles
+            })
+
+          setResults(withDist)
+          setSearchMode('proximity')
+
+        } else {
+          // ── Text search fallback ──────────────────────────────────────────
+          setLoadingLabel('Searching…')
+
+          const { data, error } = await supabase
+            .from('funeral_directors')
+            .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member, is_featured')
+            .or(`town.ilike.%${location}%,postcode.ilike.%${location}%`)
+            .order('is_featured', { ascending: false })
+            .order('attended_price', { ascending: true })
+
+          if (cancelled) return
+          if (error) setFetchError(error.message)
+          else setResults(data ?? [])
+          setSearchMode('text')
+        }
+      } catch (err) {
+        if (!cancelled) setFetchError('Something went wrong. Please try again.')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-
-      setLoading(false)
     }
 
     run()
