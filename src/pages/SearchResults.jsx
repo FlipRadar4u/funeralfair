@@ -132,16 +132,24 @@ function DirectorCard({ director, backUrl, isBestValue }) {
   const attended  = formatPrice(director.attended_price)
   const cremation = formatPrice(director.cremation_price)
   const hasBadge  = director.nafd_member || director.saif_member
+  const isFeatured = director.is_featured
   const navigate  = useNavigate()
 
   return (
-    <div className={`card-hover bg-white rounded-2xl border p-6 shadow-sm flex flex-col gap-5 cursor-pointer ${isBestValue ? 'border-sage ring-1 ring-sage' : 'border-warm-border'}`}
+    <div className={`card-hover bg-white rounded-2xl border p-6 shadow-sm flex flex-col gap-5 cursor-pointer ${isFeatured ? 'border-sage ring-1 ring-sage' : isBestValue ? 'border-sage/50 ring-1 ring-sage/50' : 'border-warm-border'}`}
       onClick={() => navigate(`/director/${director.id}`, { state: { from: backUrl } })}
     >
 
-      {/* Best value banner */}
-      {isBestValue && (
+      {/* Featured banner */}
+      {isFeatured && (
         <div className="-mx-6 -mt-6 mb-1 bg-sage text-white text-xs font-semibold text-center py-1.5 rounded-t-2xl tracking-wide">
+          Featured
+        </div>
+      )}
+
+      {/* Best value banner (non-featured only) */}
+      {!isFeatured && isBestValue && (
+        <div className="-mx-6 -mt-6 mb-1 bg-sage/80 text-white text-xs font-semibold text-center py-1.5 rounded-t-2xl tracking-wide">
           Best value nearby
         </div>
       )}
@@ -257,7 +265,7 @@ export default function SearchResults() {
 
         const { data, error } = await supabase
           .from('funeral_directors')
-          .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member')
+          .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member, is_featured')
 
         if (cancelled) return
         if (error) { setFetchError(error.message); setLoading(false); return }
@@ -276,6 +284,7 @@ export default function SearchResults() {
         if (cancelled) return
 
         // Calculate distance — prefer full postcode coords, fall back to outcode
+        // Featured directors are sorted first, then by distance within each group
         const withDist = directors
           .map(d => {
             const coords = fullGeocoded[d.postcode] ?? outcodeGeocoded[extractOutcode(d.postcode)]
@@ -284,7 +293,11 @@ export default function SearchResults() {
             return { ...d, _miles: miles }
           })
           .filter(d => d !== null && d._miles <= RADIUS_MILES)
-          .sort((a, b) => a._miles - b._miles)
+          .sort((a, b) => {
+            if (a.is_featured && !b.is_featured) return -1
+            if (!a.is_featured && b.is_featured) return 1
+            return a._miles - b._miles
+          })
 
         setResults(withDist)
         setSearchMode('proximity')
@@ -295,8 +308,9 @@ export default function SearchResults() {
 
         const { data, error } = await supabase
           .from('funeral_directors')
-          .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member')
+          .select('id, name, town, postcode, attended_price, cremation_price, nafd_member, saif_member, is_featured')
           .or(`town.ilike.%${location}%,postcode.ilike.%${location}%`)
+          .order('is_featured', { ascending: false })
           .order('attended_price', { ascending: true })
 
         if (cancelled) return
@@ -391,9 +405,17 @@ export default function SearchResults() {
               We know you didn't choose to be here. Prices come directly from legally required Standardised Price Lists — compare with confidence, at your own pace.
             </p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {results.map((fd, i) => (
-                <DirectorCard key={fd.id} director={fd} backUrl={backUrl} isBestValue={i === 0} />
-              ))}
+              {results.map((fd, i) => {
+                const firstNonFeatured = results.findIndex(r => !r.is_featured)
+                return (
+                  <DirectorCard
+                    key={fd.id}
+                    director={fd}
+                    backUrl={backUrl}
+                    isBestValue={!fd.is_featured && i === firstNonFeatured}
+                  />
+                )
+              })}
             </div>
           </>
         )}
