@@ -21,9 +21,12 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-warm-border shadow-sm">
       <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
 
-        <Link to="/" className="flex items-baseline gap-0.5 select-none" onClick={() => setMenuOpen(false)}>
-          <span className="text-xl font-bold tracking-tight text-charcoal">Funeral</span>
-          <span className="text-xl font-bold tracking-tight text-sage">Fair</span>
+        <Link to="/" className="flex items-center gap-1 select-none" onClick={() => setMenuOpen(false)}>
+          <img src="/logo.png" alt="" className="h-10 w-auto" />
+          <span className="flex items-baseline gap-0.5">
+            <span className="text-xl font-bold tracking-tight text-charcoal">Funeral</span>
+            <span className="text-xl font-bold tracking-tight text-sage">Fair</span>
+          </span>
         </Link>
 
         {/* Desktop nav */}

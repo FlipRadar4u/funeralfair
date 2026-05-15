@@ -7,6 +7,10 @@ import GovernmentGrants from './pages/GovernmentGrants'
 import CostGuide from './pages/CostGuide'
 import WhatToDo from './pages/WhatToDo'
 import ForFuneralDirectors from './pages/ForFuneralDirectors'
+import HowWeRank from './pages/HowWeRank'
+import FeaturedConfirmed from './pages/FeaturedConfirmed'
+import DirectorDashboard from './pages/DirectorDashboard'
+import AdminPanel from './pages/AdminPanel'
 
 function AnimatedRoutes() {
   const { pathname } = useLocation()
@@ -20,6 +24,10 @@ function AnimatedRoutes() {
         <Route path="/cost-guide" element={<CostGuide />} />
         <Route path="/what-to-do" element={<WhatToDo />} />
         <Route path="/for-funeral-directors" element={<ForFuneralDirectors />} />
+        <Route path="/how-we-rank" element={<HowWeRank />} />
+        <Route path="/featured-confirmed" element={<FeaturedConfirmed />} />
+        <Route path="/director/dashboard" element={<DirectorDashboard />} />
+        <Route path="/admin" element={<AdminPanel />} />
       </Routes>
     </div>
   )

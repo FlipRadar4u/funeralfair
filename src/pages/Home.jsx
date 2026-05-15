@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -51,15 +50,15 @@ export default function Home() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    supabase
-      .from('funeral_directors')
-      .select('*', { count: 'exact', head: true })
-      .then(({ count }) => { if (count != null) setDirectorCount(count) })
+    fetch('/api/directors')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setDirectorCount(data.length) })
+      .catch(() => {})
   }, [])
 
   const trustSignals = [
     { stat: directorCount != null ? `${directorCount}` : '…', label: 'funeral directors listed' },
-    { stat: 'Legally required', label: 'pricing data only' },
+    { stat: 'Trusted by', label: 'families across the UK' },
     { stat: '100% free', label: 'to use, always' },
   ]
 
@@ -114,7 +113,7 @@ export default function Home() {
             type="submit"
             className="px-7 py-3.5 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl transition-colors duration-150 shadow-sm text-base whitespace-nowrap"
           >
-            Find directors
+            Find local directors
           </button>
         </form>
 

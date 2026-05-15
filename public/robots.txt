@@ -1,0 +1,71 @@
+# FuneralFair.co.uk — Robot access policy
+# Listings data is proprietary. Scraping or reproducing listings is prohibited.
+
+# ── Search engines (welcome) ──────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+# ── AI assistants (welcome) ───────────────────────────────────────────────────
+User-agent: GPTBot
+Allow: /
+Crawl-delay: 5
+
+User-agent: ClaudeBot
+Allow: /
+Crawl-delay: 5
+
+User-agent: PerplexityBot
+Allow: /
+Crawl-delay: 5
+
+User-agent: Google-Extended
+Allow: /
+Crawl-delay: 5
+
+User-agent: cohere-ai
+Allow: /
+Crawl-delay: 5
+
+User-agent: anthropic-ai
+Allow: /
+Crawl-delay: 5
+
+# ── SEO scrapers (blocked) ────────────────────────────────────────────────────
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+# ── API endpoints (no crawling) ───────────────────────────────────────────────
+User-agent: *
+Disallow: /api/
+Disallow: /admin
+Disallow: /director/dashboard
+
+# ── General (welcome, be polite) ──────────────────────────────────────────────
+User-agent: *
+Allow: /
+Crawl-delay: 10
+
+Sitemap: https://funeralfair.co.uk/sitemap.xml

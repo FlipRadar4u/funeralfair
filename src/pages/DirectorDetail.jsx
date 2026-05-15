@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -75,6 +74,133 @@ const INFO_ICON = (
   </svg>
 )
 
+function PhotoGallery({ photos }) {
+  const [active, setActive] = useState(null)
+  if (!photos?.length) return null
+  return (
+    <div className="bg-white rounded-2xl border border-warm-border shadow-sm overflow-hidden">
+      {/* Thumbnails */}
+      <div className="flex gap-2 overflow-x-auto p-4 scrollbar-hide">
+        {photos.map((url, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(url)}
+            className="shrink-0 w-32 h-24 rounded-xl overflow-hidden border border-warm-border hover:border-sage transition-colors"
+          >
+            <img src={url} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+      {/* Lightbox */}
+      {active && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setActive(null)}
+        >
+          <img src={active} alt="" className="max-w-full max-h-full rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+          <button onClick={() => setActive(null)} className="absolute top-5 right-5 text-white text-3xl leading-none">×</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EnquiryForm({ director }) {
+  const [form, setForm]     = useState({ name: '', email: '', phone: '', message: '' })
+  const [status, setStatus] = useState(null) // null | 'sending' | 'success' | 'error'
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setStatus('sending')
+    try {
+      const res = await fetch('/api/enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          directorName: director.name,
+          directorTown: director.town,
+          enquirerName:  form.name,
+          enquirerEmail: form.email,
+          enquirerPhone: form.phone,
+          message:       form.message,
+        }),
+      })
+      setStatus(res.ok ? 'success' : 'error')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-8 text-center">
+        <div className="w-12 h-12 rounded-full bg-sage-light border border-sage-border flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-sage" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+          </svg>
+        </div>
+        <h3 className="font-semibold text-charcoal mb-1">Enquiry sent</h3>
+        <p className="text-sm text-muted">We've forwarded your message to {director.name}. They'll be in touch soon.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-sage ring-1 ring-sage shadow-sm px-7 py-6">
+      <h2 className="text-base font-semibold text-charcoal mb-0.5">Send an enquiry</h2>
+      <p className="text-sm text-muted mb-5">We'll forward your message to {director.name}.</p>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
+            <input
+              required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Jane Smith"
+              className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-charcoal">Your email <span className="text-red-400">*</span></label>
+            <input
+              type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="you@email.com"
+              className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-charcoal">Phone <span className="text-muted font-normal">(optional)</span></label>
+          <input
+            type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            placeholder="e.g. 07700 900000"
+            className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-charcoal">Message <span className="text-red-400">*</span></label>
+          <textarea
+            required rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+            placeholder="Tell them what you need help with…"
+            className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage resize-none"
+          />
+        </div>
+        {status === 'error' && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            Something went wrong. Please try calling them directly.
+          </p>
+        )}
+        <button
+          type="submit" disabled={status === 'sending'}
+          className="w-full py-3 bg-sage hover:bg-sage-dark disabled:opacity-60 text-white font-semibold rounded-xl text-sm transition-colors"
+        >
+          {status === 'sending' ? 'Sending…' : 'Send enquiry'}
+        </button>
+        <p className="text-xs text-muted text-center">No account needed. We'll never share your details.</p>
+      </form>
+    </div>
+  )
+}
+
 export default function DirectorDetail() {
   const { id } = useParams()
   const { state } = useLocation()
@@ -86,18 +212,10 @@ export default function DirectorDetail() {
   const [error,    setError]    = useState(null)
 
   useEffect(() => {
-    async function fetchDirector() {
-      const { data, error: err } = await supabase
-        .from('funeral_directors')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (err) setError(err.message)
-      else setDirector(data)
-      setLoading(false)
-    }
-    fetchDirector()
+    fetch(`/api/director/${id}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => { setDirector(data); setLoading(false) })
+      .catch(err => { setError(`Could not load director (${err})`); setLoading(false) })
   }, [id])
 
   return (
@@ -151,6 +269,9 @@ export default function DirectorDetail() {
                 )}
               </div>
             </div>
+
+            {/* ── Photo gallery (featured only) ── */}
+            {director.is_featured && <PhotoGallery photos={director.photos} />}
 
             {/* ── Contact card ── */}
             <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-2">
@@ -231,6 +352,9 @@ export default function DirectorDetail() {
               </div>
             </div>
 
+            {/* ── Enquiry form (featured only) ── */}
+            {director.is_featured && <EnquiryForm director={director} />}
+
             {/* ── Visit website CTA ── */}
             {director.website && (
               <a
@@ -254,6 +378,16 @@ export default function DirectorDetail() {
               >
                 Claim listing →
               </Link>
+            </div>
+
+            {/* Report inaccurate details */}
+            <div className="text-center">
+              <a
+                href={`mailto:hello@funeralfair.co.uk?subject=${encodeURIComponent(`Inaccurate listing: ${director.name}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to report inaccurate details on the following listing:\n\n${director.name}\n${window.location.href}\n\nDetails to correct:\n\n`)}`}
+                className="text-xs text-muted hover:text-charcoal underline underline-offset-2 transition-colors duration-150"
+              >
+                Report inaccurate details
+              </a>
             </div>
 
             {/* Bottom back link */}

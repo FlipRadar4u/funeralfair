@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -66,7 +65,7 @@ const TIERS = [
   },
 ]
 
-function TierCard({ tier }) {
+function TierCard({ tier, onSelectFeatured }) {
   return (
     <div className={`rounded-2xl border p-8 flex flex-col gap-5 ${tier.highlight ? 'border-sage ring-1 ring-sage bg-white' : 'border-warm-border bg-white'}`}>
       {tier.highlight && (
@@ -91,16 +90,21 @@ function TierCard({ tier }) {
           </li>
         ))}
       </ul>
-      <a
-        href="#apply"
-        className={`mt-auto w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors duration-150 ${
-          tier.highlight
-            ? 'bg-sage hover:bg-sage-dark text-white'
-            : 'border-2 border-sage text-sage hover:bg-sage-light'
-        }`}
-      >
-        {tier.cta}
-      </a>
+      {tier.highlight ? (
+        <button
+          onClick={onSelectFeatured}
+          className="mt-auto w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors duration-150 bg-sage hover:bg-sage-dark text-white"
+        >
+          {tier.cta}
+        </button>
+      ) : (
+        <a
+          href="#apply"
+          className="mt-auto w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors duration-150 border-2 border-sage text-sage hover:bg-sage-light"
+        >
+          {tier.cta}
+        </a>
+      )}
     </div>
   )
 }
@@ -115,21 +119,63 @@ export default function ForFuneralDirectors() {
     website: '',
     message: '',
   })
-  const [status, setStatus] = useState(null) // null | 'sending' | 'success' | 'error'
+  const [status,        setStatus]        = useState(null) // null | 'sending' | 'success' | 'error'
+  const [featuredForm,  setFeaturedForm]  = useState({ name: '', email: '', website: '' })
+  const [featuredOpen,  setFeaturedOpen]  = useState(false)
+  const [featuredState, setFeaturedState] = useState(null) // null | 'sending' | 'error'
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
+  function handleFeaturedChange(e) {
+    setFeaturedForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  }
+
+  function openFeatured() {
+    setFeaturedOpen(true)
+    setTimeout(() => document.getElementById('featured-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+  }
+
+  async function handleFeaturedSubmit(e) {
+    e.preventDefault()
+    setFeaturedState('sending')
+    try {
+      let website = featuredForm.website.trim()
+      if (website && !/^https?:\/\//i.test(website)) website = 'https://' + website
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...featuredForm, website }),
+      })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        setFeaturedState('error')
+      }
+    } catch {
+      setFeaturedState('error')
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setStatus('sending')
-    const { error } = await supabase.from('listing_applications').insert([form])
-    if (error) {
+    try {
+      const res = await fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (res.ok) {
+        setStatus('success')
+        setForm({ business_name: '', contact_name: '', email: '', phone: '', postcode: '', website: '', message: '' })
+      } else {
+        setStatus('error')
+      }
+    } catch {
       setStatus('error')
-    } else {
-      setStatus('success')
-      setForm({ business_name: '', contact_name: '', email: '', phone: '', postcode: '', website: '', message: '' })
     }
   }
 
@@ -188,8 +234,58 @@ export default function ForFuneralDirectors() {
             <p className="text-muted">Start free. Upgrade when you're ready.</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
-            {TIERS.map(tier => <TierCard key={tier.name} tier={tier} />)}
+            {TIERS.map(tier => (
+              <TierCard key={tier.name} tier={tier} onSelectFeatured={openFeatured} />
+            ))}
           </div>
+
+          {/* Featured checkout form */}
+          {featuredOpen && (
+            <div id="featured-form" className="mt-10 bg-white border border-sage rounded-2xl p-8 max-w-lg mx-auto">
+              <h3 className="text-xl font-bold text-charcoal mb-1">Get featured</h3>
+              <p className="text-sm text-muted mb-6">Enter your details and you'll be taken to a secure payment page. £49/month, cancel any time.</p>
+              <form onSubmit={handleFeaturedSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Business name <span className="text-red-400">*</span></label>
+                  <input
+                    name="name" required value={featuredForm.name} onChange={handleFeaturedChange}
+                    placeholder="e.g. Smith & Sons Funeral Directors"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Email <span className="text-red-400">*</span></label>
+                  <input
+                    name="email" type="email" required value={featuredForm.email} onChange={handleFeaturedChange}
+                    placeholder="you@yourbusiness.co.uk"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-charcoal">Your website <span className="text-red-400">*</span></label>
+                  <input
+                    name="website" type="text" required value={featuredForm.website} onChange={handleFeaturedChange}
+                    placeholder="https://yourwebsite.co.uk"
+                    className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                  />
+                  <p className="text-xs text-muted">This is how we match you to your listing in our database.</p>
+                </div>
+                {featuredState === 'error' && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={featuredState === 'sending'}
+                  className="w-full py-3.5 bg-sage hover:bg-sage-dark disabled:opacity-60 text-white font-semibold rounded-xl transition-colors text-sm"
+                >
+                  {featuredState === 'sending' ? 'Redirecting to payment…' : 'Proceed to payment →'}
+                </button>
+                <p className="text-xs text-muted text-center">Secure payment via Stripe · Cancel any time</p>
+              </form>
+            </div>
+          )}
         </div>
       </section>
 

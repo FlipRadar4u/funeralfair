@@ -14,6 +14,7 @@ export default function Footer() {
             <Link to="/cost-guide" className="text-sm text-muted hover:text-charcoal transition-colors">Cost Guide</Link>
             <Link to="/government-grants" className="text-sm text-muted hover:text-charcoal transition-colors">Government Grants</Link>
             <Link to="/for-funeral-directors" className="text-sm text-muted hover:text-charcoal transition-colors">For Funeral Directors</Link>
+            <Link to="/how-we-rank" className="text-sm text-muted hover:text-charcoal transition-colors">How We Rank</Link>
           </nav>
         </div>
         <div className="border-t border-warm-border pt-5 text-center">
