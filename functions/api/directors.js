@@ -6,7 +6,7 @@ const HEADERS = {
   Authorization: `Bearer ${SUPABASE_KEY}`,
 }
 
-const SELECT = 'id,name,town,postcode,lat,lng,attended_price,cremation_price,nafd_member,saif_member,is_featured,last_updated,google_rating,google_reviews'
+const SELECT = 'id,name,town,postcode,lat,lng,attended_price,cremation_price,nafd_member,saif_member,is_featured,last_updated,google_rating,google_reviews,claimed_at'
 const PAGE   = 1000
 
 const MAX_RADIUS = 50

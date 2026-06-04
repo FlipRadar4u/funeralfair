@@ -302,6 +302,14 @@ export default function DirectorDetail() {
                     {director.postcode ? `, ${director.postcode}` : ''}
                   </p>
                   <StarRating rating={director.google_rating} reviews={director.google_reviews} name={director.name} town={director.town} />
+                  {director.claimed_at && (
+                    <div className="flex items-center gap-1.5 mt-3">
+                      <svg className="w-4 h-4 text-sage shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+                      </svg>
+                      <span className="text-sm font-medium text-sage">Listing verified by this funeral director</span>
+                    </div>
+                  )}
                 </div>
                 {(director.nafd_member || director.saif_member) && (
                   <div className="flex gap-2 shrink-0 flex-wrap">
@@ -443,16 +451,18 @@ export default function DirectorDetail() {
               </a>
             )}
 
-            {/* Claim listing nudge */}
-            <div className="rounded-xl border border-warm-border bg-white px-5 py-4">
-              <p className="text-sm text-muted leading-relaxed">
-                Are you this funeral director?{' '}
-                <Link to="/for-funeral-directors" className="text-charcoal font-medium underline underline-offset-2 hover:opacity-70 transition-opacity">
-                  Claim your listing
-                </Link>
-                {' '}to keep your prices and details up to date.
-              </p>
-            </div>
+            {/* Claim listing nudge — hidden if already claimed */}
+            {!director.claimed_at && (
+              <div className="rounded-xl border border-warm-border bg-white px-5 py-4">
+                <p className="text-sm text-muted leading-relaxed">
+                  Are you this funeral director?{' '}
+                  <Link to="/for-funeral-directors" className="text-charcoal font-medium underline underline-offset-2 hover:opacity-70 transition-opacity">
+                    Claim your listing
+                  </Link>
+                  {' '}to keep your prices and details up to date.
+                </p>
+              </div>
+            )}
 
             {/* Report inaccurate details */}
             <div className="text-center">

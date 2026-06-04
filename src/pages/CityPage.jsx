@@ -49,6 +49,14 @@ function DirectorCard({ director, city }) {
           <p className="text-sm text-muted mt-0.5">{director.town}{director.postcode ? ` · ${director.postcode}` : ''}</p>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
+          {director.claimed_at && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage text-white">
+              <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Listing verified
+            </span>
+          )}
           {director.is_featured && (
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage-light border border-sage-border text-sage">
               Featured

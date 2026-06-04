@@ -16,6 +16,14 @@ function fetchWithTimeout(url, options = {}, ms = 8000) {
 
 async function geocodeInput(query) {
   const q = query.trim()
+
+  // Match known city names first (e.g. "London", "Manchester")
+  const cityMatch = Object.values(CITIES).find(
+    c => c.name.toLowerCase() === q.toLowerCase()
+  )
+  if (cityMatch) return { lat: cityMatch.lat, lng: cityMatch.lng }
+
+  // Fall back to postcodes.io for postcodes and outcode areas
   try {
     const r1 = await fetchWithTimeout(`https://api.postcodes.io/postcodes/${encodeURIComponent(q)}`)
     const j1 = await r1.json()
@@ -140,12 +148,22 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
             </div>
           )}
         </div>
-        {hasBadge && (
-          <div className="flex gap-1.5 shrink-0 flex-wrap justify-end pt-0.5">
-            {director.nafd_member && <GreenBadge label="NAFD member" description="National Association of Funeral Directors" />}
-            {director.saif_member && <GreenBadge label="SAIF member" description="Society of Allied & Independent Funeral Directors" />}
-          </div>
-        )}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          {director.claimed_at && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage text-white">
+              <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Listing verified
+            </span>
+          )}
+          {hasBadge && (
+            <div className="flex gap-1.5 flex-wrap justify-end">
+              {director.nafd_member && <GreenBadge label="NAFD member" description="National Association of Funeral Directors" />}
+              {director.saif_member && <GreenBadge label="SAIF member" description="Society of Allied & Independent Funeral Directors" />}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Prices */}
