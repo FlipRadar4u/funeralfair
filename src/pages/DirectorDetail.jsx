@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -26,6 +27,39 @@ function GreenBadge({ label, description }) {
         </span>
       )}
     </span>
+  )
+}
+
+function StarRating({ rating, reviews, name, town }) {
+  if (!rating) return null
+  const stars = Math.round(Number(rating))
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${town} funeral director`)}`
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map(i => (
+          <svg
+            key={i}
+            className={`w-4 h-4 ${i <= stars ? 'text-amber-400' : 'text-warm-border'}`}
+            viewBox="0 0 20 20" fill="currentColor"
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z" />
+          </svg>
+        ))}
+      </div>
+      <span className="text-sm font-semibold text-charcoal">{Number(rating).toFixed(1)}</span>
+      {reviews > 0 && (
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="text-sm text-muted hover:text-sage underline underline-offset-2 transition-colors"
+        >
+          {reviews.toLocaleString()} Google reviews
+        </a>
+      )}
+    </div>
   )
 }
 
@@ -92,14 +126,15 @@ function PhotoGallery({ photos }) {
         ))}
       </div>
       {/* Lightbox */}
-      {active && (
+      {active && createPortal(
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
           onClick={() => setActive(null)}
         >
           <img src={active} alt="" className="max-w-full max-h-full rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
           <button onClick={() => setActive(null)} className="absolute top-5 right-5 text-white text-3xl leading-none">×</button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -117,8 +152,9 @@ function EnquiryForm({ director }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          directorName: director.name,
-          directorTown: director.town,
+          directorId:    director.id,
+          directorName:  director.name,
+          directorTown:  director.town,
           enquirerName:  form.name,
           enquirerEmail: form.email,
           enquirerPhone: form.phone,
@@ -152,34 +188,34 @@ function EnquiryForm({ director }) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
+            <label htmlFor="enq-name" className="text-xs font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
             <input
-              required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Jane Smith"
+              id="enq-name" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Jane Smith" autoComplete="name"
               className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-charcoal">Your email <span className="text-red-400">*</span></label>
+            <label htmlFor="enq-email" className="text-xs font-medium text-charcoal">Your email <span className="text-red-400">*</span></label>
             <input
-              type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="you@email.com"
+              id="enq-email" type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="you@email.com" autoComplete="email"
               className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-charcoal">Phone <span className="text-muted font-normal">(optional)</span></label>
+          <label htmlFor="enq-phone" className="text-xs font-medium text-charcoal">Phone <span className="text-muted font-normal">(optional)</span></label>
           <input
-            type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-            placeholder="e.g. 07700 900000"
+            id="enq-phone" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            placeholder="e.g. 07700 900000" autoComplete="tel"
             className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-charcoal">Message <span className="text-red-400">*</span></label>
+          <label htmlFor="enq-message" className="text-xs font-medium text-charcoal">Message <span className="text-red-400">*</span></label>
           <textarea
-            required rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+            id="enq-message" required rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
             placeholder="Tell them what you need help with…"
             className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage resize-none"
           />
@@ -203,7 +239,7 @@ function EnquiryForm({ director }) {
 
 export default function DirectorDetail() {
   const { id } = useParams()
-  const { state } = useLocation()
+  const { state, pathname } = useLocation()
   const navigate = useNavigate()
   const backUrl = state?.from || '/search'
 
@@ -214,7 +250,12 @@ export default function DirectorDetail() {
   useEffect(() => {
     fetch(`/api/director/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => { setDirector(data); setLoading(false) })
+      .then(data => {
+        setDirector(data)
+        setLoading(false)
+        document.title = `${data.name} — FuneralFair`
+        document.querySelector('meta[name="description"]')?.setAttribute('content', `Compare prices for ${data.name} in ${data.town}. Attended funeral and direct cremation prices from their published Standardised Price List.`)
+      })
       .catch(err => { setError(`Could not load director (${err})`); setLoading(false) })
   }, [id])
 
@@ -222,7 +263,7 @@ export default function DirectorDetail() {
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 pb-24 sm:pb-12">
 
         {/* Back link */}
         <Link
@@ -260,6 +301,7 @@ export default function DirectorDetail() {
                     {director.town}
                     {director.postcode ? `, ${director.postcode}` : ''}
                   </p>
+                  <StarRating rating={director.google_rating} reviews={director.google_reviews} name={director.name} town={director.town} />
                 </div>
                 {(director.nafd_member || director.saif_member) && (
                   <div className="flex gap-2 shrink-0 flex-wrap">
@@ -290,6 +332,7 @@ export default function DirectorDetail() {
                   <a
                     href={`tel:${director.phone}`}
                     className="text-sage hover:underline font-medium"
+                    style={{ touchAction: 'manipulation' }}
                   >
                     {director.phone}
                   </a>
@@ -352,38 +395,69 @@ export default function DirectorDetail() {
               </div>
             </div>
 
-            {/* ── Enquiry form (featured only) ── */}
-            {director.is_featured && <EnquiryForm director={director} />}
+            {/* ── Enquiry form or website redirect ── */}
+            <div id="enquiry-form">
+              {director.has_email ? (
+                <EnquiryForm director={director} />
+              ) : (
+                <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-7 text-center">
+                  <div className="w-12 h-12 rounded-full bg-sage-light border border-sage-border flex items-center justify-center mx-auto mb-4">
+                    {GLOBE_ICON}
+                  </div>
+                  <h2 className="text-base font-semibold text-charcoal mb-2">Contact {director.name}</h2>
+                  <p className="text-sm text-muted leading-relaxed mb-5">
+                    Visit their website to send an enquiry or find their contact details.
+                  </p>
+                  {director.website ? (
+                    <a
+                      href={director.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl text-sm transition-colors shadow-sm"
+                    >
+                      Visit website →
+                    </a>
+                  ) : director.phone ? (
+                    <a
+                      href={`tel:${director.phone}`}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl text-sm transition-colors shadow-sm"
+                    >
+                      {PHONE_ICON} Call {director.phone}
+                    </a>
+                  ) : (
+                    <p className="text-sm text-muted">No contact details available yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
 
-            {/* ── Visit website CTA ── */}
-            {director.website && (
+            {/* ── Visit website CTA (only when form is shown) ── */}
+            {director.has_email && director.website && (
               <a
                 href={director.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full block text-center py-3.5 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl transition-colors duration-150 shadow-sm text-base"
+                className="w-full block text-center py-3.5 bg-white border border-warm-border hover:border-sage text-charcoal font-semibold rounded-xl transition-colors duration-150 text-sm"
               >
-                Visit website
+                Visit website →
               </a>
             )}
 
             {/* Claim listing nudge */}
-            <div className="rounded-xl border border-warm-border bg-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="rounded-xl border border-warm-border bg-white px-5 py-4">
               <p className="text-sm text-muted leading-relaxed">
-                Are you this funeral director? <span className="text-charcoal font-medium">Claim your listing</span> to keep your prices and details up to date.
+                Are you this funeral director?{' '}
+                <Link to="/for-funeral-directors" className="text-charcoal font-medium underline underline-offset-2 hover:opacity-70 transition-opacity">
+                  Claim your listing
+                </Link>
+                {' '}to keep your prices and details up to date.
               </p>
-              <Link
-                to="/for-funeral-directors"
-                className="shrink-0 text-sm font-semibold text-sage hover:underline"
-              >
-                Claim listing →
-              </Link>
             </div>
 
             {/* Report inaccurate details */}
             <div className="text-center">
               <a
-                href={`mailto:hello@funeralfair.co.uk?subject=${encodeURIComponent(`Inaccurate listing: ${director.name}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to report inaccurate details on the following listing:\n\n${director.name}\n${window.location.href}\n\nDetails to correct:\n\n`)}`}
+                href={`mailto:hello@funeralfair.co.uk?subject=${encodeURIComponent(`Inaccurate listing: ${director.name}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to report inaccurate details on the following listing:\n\n${director.name}\nhttps://funeralfair.co.uk${pathname}\n\nDetails to correct:\n\n`)}`}
                 className="text-xs text-muted hover:text-charcoal underline underline-offset-2 transition-colors duration-150"
               >
                 Report inaccurate details
@@ -405,6 +479,45 @@ export default function DirectorDetail() {
         )}
 
       </main>
+
+      {/* ── Sticky mobile CTA bar ── */}
+      {!loading && director && createPortal(
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-warm-border shadow-lg px-4 py-3 flex gap-3">
+          {director.phone && (
+            <a
+              href={`tel:${director.phone}`}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-sage text-sage font-semibold text-sm"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25z" />
+              </svg>
+              Call
+            </a>
+          )}
+          {director.has_email ? (
+            <a
+              href="#enquiry"
+              onClick={e => { e.preventDefault(); document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+              className={`${director.phone ? 'flex-1' : 'flex-[2]'} flex items-center justify-center gap-2 py-3 rounded-xl bg-sage text-white font-semibold text-sm`}
+              style={{ touchAction: 'manipulation' }}
+            >
+              Send enquiry
+            </a>
+          ) : director.website ? (
+            <a
+              href={director.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${director.phone ? 'flex-1' : 'flex-[2]'} flex items-center justify-center gap-2 py-3 rounded-xl bg-sage text-white font-semibold text-sm`}
+              style={{ touchAction: 'manipulation' }}
+            >
+              Visit website →
+            </a>
+          ) : null}
+        </div>,
+        document.body
+      )}
 
       <Footer />
     </div>

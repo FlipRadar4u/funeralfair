@@ -72,8 +72,8 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
     setError(null)
     const payload = {
       ...form,
-      attended_price:  form.attended_price  === '' ? null : Number(form.attended_price),
-      cremation_price: form.cremation_price === '' ? null : Number(form.cremation_price),
+      attended_price:  form.attended_price  === '' ? null : Math.round(Number(form.attended_price)),
+      cremation_price: form.cremation_price === '' ? null : Math.round(Number(form.cremation_price)),
     }
     const res = await fetch(`/api/admin/update-director?pw=${encodeURIComponent(pw)}`, {
       method: 'POST',
@@ -903,6 +903,7 @@ export default function AdminPanel() {
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState(null)
   const [tab,       setTab]       = useState('overview')
+  const [claimsSeen, setClaimsSeen] = useState(false)
 
   async function login(e) {
     e.preventDefault()
@@ -1002,11 +1003,11 @@ export default function AdminPanel() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
               <div className="flex gap-0 overflow-x-auto">
                 {TABS.map(t => {
-                  const badge = t.id === 'review' ? reviewCount : t.id === 'photos' ? photoCount : t.id === 'claims' ? claimCount : 0
+                  const badge = t.id === 'review' ? reviewCount : t.id === 'photos' ? photoCount : t.id === 'claims' ? (claimsSeen ? 0 : claimCount) : 0
                   return (
                     <button
                       key={t.id}
-                      onClick={() => setTab(t.id)}
+                      onClick={() => { setTab(t.id); if (t.id === 'claims') setClaimsSeen(true) }}
                       className={`relative px-4 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
                         tab === t.id
                           ? 'border-sage text-sage'

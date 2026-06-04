@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -110,6 +110,10 @@ function TierCard({ tier, onSelectFeatured }) {
 }
 
 export default function ForFuneralDirectors() {
+  useEffect(() => {
+    document.title = 'For Funeral Directors — List Your Prices | FuneralFair'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'List your funeral home on FuneralFair and reach families actively comparing prices. Free standard listing. No commission ever.')
+  }, [])
   const [form, setForm] = useState({
     business_name: '',
     contact_name: '',
@@ -117,6 +121,9 @@ export default function ForFuneralDirectors() {
     phone: '',
     postcode: '',
     website: '',
+    attended_price: '',
+    cremation_price: '',
+    packages: '',
     message: '',
   })
   const [status,        setStatus]        = useState(null) // null | 'sending' | 'success' | 'error'
@@ -170,7 +177,7 @@ export default function ForFuneralDirectors() {
       })
       if (res.ok) {
         setStatus('success')
-        setForm({ business_name: '', contact_name: '', email: '', phone: '', postcode: '', website: '', message: '' })
+        setForm({ business_name: '', contact_name: '', email: '', phone: '', postcode: '', website: '', attended_price: '', cremation_price: '', packages: '', message: '' })
       } else {
         setStatus('error')
       }
@@ -246,26 +253,26 @@ export default function ForFuneralDirectors() {
               <p className="text-sm text-muted mb-6">Enter your details and you'll be taken to a secure payment page. £49/month, cancel any time.</p>
               <form onSubmit={handleFeaturedSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Business name <span className="text-red-400">*</span></label>
+                  <label htmlFor="feat-name" className="text-sm font-medium text-charcoal">Business name <span className="text-red-400">*</span></label>
                   <input
-                    name="name" required value={featuredForm.name} onChange={handleFeaturedChange}
-                    placeholder="e.g. Smith & Sons Funeral Directors"
+                    id="feat-name" name="name" required value={featuredForm.name} onChange={handleFeaturedChange}
+                    placeholder="e.g. Smith & Sons Funeral Directors" autoComplete="organization"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Email <span className="text-red-400">*</span></label>
+                  <label htmlFor="feat-email" className="text-sm font-medium text-charcoal">Email <span className="text-red-400">*</span></label>
                   <input
-                    name="email" type="email" required value={featuredForm.email} onChange={handleFeaturedChange}
-                    placeholder="you@yourbusiness.co.uk"
+                    id="feat-email" name="email" type="email" required value={featuredForm.email} onChange={handleFeaturedChange}
+                    placeholder="you@yourbusiness.co.uk" autoComplete="email"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Your website <span className="text-red-400">*</span></label>
+                  <label htmlFor="feat-website" className="text-sm font-medium text-charcoal">Your website <span className="text-red-400">*</span></label>
                   <input
-                    name="website" type="text" required value={featuredForm.website} onChange={handleFeaturedChange}
-                    placeholder="https://yourwebsite.co.uk"
+                    id="feat-website" name="website" type="text" required value={featuredForm.website} onChange={handleFeaturedChange}
+                    placeholder="https://yourwebsite.co.uk" autoComplete="url"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                   <p className="text-xs text-muted">This is how we match you to your listing in our database.</p>
@@ -293,8 +300,12 @@ export default function ForFuneralDirectors() {
       <section id="apply" className="bg-white border-t border-warm-border px-4 sm:px-6 py-20">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-charcoal mb-3">Apply to list your business</h2>
+            <span className="inline-flex items-center gap-1.5 mb-4 px-3 py-1 rounded-full bg-sage-light border border-sage-border text-sage text-xs font-semibold tracking-widest uppercase">
+              Always free
+            </span>
+            <h2 className="text-3xl font-bold text-charcoal mb-3">Apply to list your business for free</h2>
             <p className="text-muted text-sm leading-relaxed">
+              A standard listing costs nothing — no credit card, no catch.
               Fill in your details and we'll be in touch within 2 working days.
               Already listed? Use the same form to claim your listing.
             </p>
@@ -314,62 +325,103 @@ export default function ForFuneralDirectors() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Business name <span className="text-red-400">*</span></label>
+                  <label htmlFor="app-business" className="text-sm font-medium text-charcoal">Business name <span className="text-red-400">*</span></label>
                   <input
-                    name="business_name" required value={form.business_name} onChange={handleChange}
-                    placeholder="e.g. Smith & Sons Funeral Directors"
+                    id="app-business" name="business_name" required value={form.business_name} onChange={handleChange}
+                    placeholder="e.g. Smith & Sons Funeral Directors" autoComplete="organization"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
+                  <label htmlFor="app-contact" className="text-sm font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
                   <input
-                    name="contact_name" required value={form.contact_name} onChange={handleChange}
-                    placeholder="e.g. John Smith"
+                    id="app-contact" name="contact_name" required value={form.contact_name} onChange={handleChange}
+                    placeholder="e.g. John Smith" autoComplete="name"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Email <span className="text-red-400">*</span></label>
+                  <label htmlFor="app-email" className="text-sm font-medium text-charcoal">Email <span className="text-red-400">*</span></label>
                   <input
-                    name="email" type="email" required value={form.email} onChange={handleChange}
-                    placeholder="you@yourbusiness.co.uk"
+                    id="app-email" name="email" type="email" required value={form.email} onChange={handleChange}
+                    placeholder="you@yourbusiness.co.uk" autoComplete="email"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Phone</label>
+                  <label htmlFor="app-phone" className="text-sm font-medium text-charcoal">Phone</label>
                   <input
-                    name="phone" type="tel" value={form.phone} onChange={handleChange}
-                    placeholder="e.g. 0151 123 4567"
+                    id="app-phone" name="phone" type="tel" value={form.phone} onChange={handleChange}
+                    placeholder="e.g. 0151 123 4567" autoComplete="tel"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Postcode</label>
+                  <label htmlFor="app-postcode" className="text-sm font-medium text-charcoal">Postcode</label>
                   <input
-                    name="postcode" value={form.postcode} onChange={handleChange}
-                    placeholder="e.g. L1 1AA"
+                    id="app-postcode" name="postcode" value={form.postcode} onChange={handleChange}
+                    placeholder="e.g. L1 1AA" autoComplete="postal-code"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-charcoal">Website</label>
+                  <label htmlFor="app-website" className="text-sm font-medium text-charcoal">Website</label>
                   <input
-                    name="website" type="url" value={form.website} onChange={handleChange}
-                    placeholder="https://yourwebsite.co.uk"
+                    id="app-website" name="website" type="url" value={form.website} onChange={handleChange}
+                    placeholder="https://yourwebsite.co.uk" autoComplete="url"
                     className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                   />
                 </div>
               </div>
+              {/* Pricing section */}
+              <div className="border-t border-warm-border pt-5">
+                <p className="text-sm font-semibold text-charcoal mb-1">Your pricing <span className="font-normal text-muted">(optional)</span></p>
+                <p className="text-xs text-muted mb-4 leading-relaxed">
+                  We source prices from your published Standardised Price List — but if yours have changed or aren't listed yet, add them here and we'll update your listing.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-charcoal">Attended funeral price (£)</label>
+                    <input
+                      name="attended_price" type="number" min="0" value={form.attended_price} onChange={handleChange}
+                      placeholder="e.g. 3500"
+                      className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                    />
+                    <p className="text-xs text-muted">Your SPL attended funeral price, including the coffin</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-charcoal">Direct cremation price (£)</label>
+                    <input
+                      name="cremation_price" type="number" min="0" value={form.cremation_price} onChange={handleChange}
+                      placeholder="e.g. 1200"
+                      className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+                    />
+                    <p className="text-xs text-muted">Your SPL simple cremation price</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Packages section */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-charcoal">Packages & services <span className="font-normal text-muted">(optional)</span></label>
+                <textarea
+                  name="packages" value={form.packages} onChange={handleChange} rows={4}
+                  placeholder={`Describe any packages or services you offer — for example:\n• Unattended cremation from £895 (no hearse, ashes returned by post)\n• Standard attended funeral from £2,800 including hearse and limousine\n• Home visit arrangements available\n• 24-hour care and collection`}
+                  className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage resize-none"
+                />
+                <p className="text-xs text-muted leading-relaxed">
+                  This helps families understand what you offer beyond the standard SPL prices. We'll display relevant details on your listing once reviewed.
+                </p>
+              </div>
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-charcoal">Anything else you'd like us to know?</label>
                 <textarea
-                  name="message" value={form.message} onChange={handleChange} rows={4}
+                  name="message" value={form.message} onChange={handleChange} rows={3}
                   placeholder="e.g. I'm already listed and want to claim my listing, or I'd like to discuss the Featured plan..."
                   className="px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-sage resize-none"
                 />
@@ -386,7 +438,7 @@ export default function ForFuneralDirectors() {
                 disabled={status === 'sending'}
                 className="w-full py-3.5 bg-sage hover:bg-sage-dark disabled:opacity-60 text-white font-semibold rounded-xl transition-colors duration-150 text-base"
               >
-                {status === 'sending' ? 'Sending…' : 'Submit application'}
+                {status === 'sending' ? 'Sending…' : 'Apply for free listing'}
               </button>
 
               <p className="text-xs text-muted text-center leading-relaxed">

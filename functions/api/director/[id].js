@@ -4,7 +4,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 export async function onRequestGet(context) {
   const { id } = context.params
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/funeral_directors?id=eq.${id}&select=*`,
+    `${SUPABASE_URL}/rest/v1/funeral_directors?id=eq.${id}&select=id,name,town,postcode,address,phone,website,attended_price,cremation_price,nafd_member,saif_member,is_featured,verified,last_updated,google_rating,google_reviews,photos,email,claimed_at`,
     {
       headers: {
         apikey: SUPABASE_KEY,
@@ -13,9 +13,17 @@ export async function onRequestGet(context) {
     }
   )
   const data = await res.json()
-  const director = Array.isArray(data) ? data[0] ?? null : null
+  const raw = Array.isArray(data) ? data[0] ?? null : null
+  if (!raw) {
+    return new Response(JSON.stringify(null), { status: 404, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
+  }
+
+  // Expose whether an email exists without exposing the address itself
+  const { email, ...director } = raw
+  director.has_email = !!(email && email.trim())
+
   return new Response(JSON.stringify(director), {
-    status: director ? 200 : 404,
-    headers: { 'Content-Type': 'application/json' },
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   })
 }

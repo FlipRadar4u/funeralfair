@@ -1,7 +1,12 @@
+import { useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 export default function HowWeRank() {
+  useEffect(() => {
+    document.title = 'How We Rank Results — FuneralFair'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'FuneralFair never accepts commission from funeral directors. Here\'s exactly how we rank results and how the Featured Partner scheme works.')
+  }, [])
   return (
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />

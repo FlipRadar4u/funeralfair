@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -16,19 +17,19 @@ const TOC = [
 
 const STATS = [
   {
-    amount: '£1,597',
+    amount: '£1,695',
     label: 'Direct cremation',
-    note: 'Average UK cost, 2024',
+    note: 'UK average, latest available data',
     highlight: false,
   },
   {
-    amount: '£4,285',
+    amount: '£4,400',
     label: 'Attended funeral',
-    note: 'National average, 2024',
+    note: 'National average, latest available data',
     highlight: true,
   },
   {
-    amount: '£5,500+',
+    amount: '£5,700+',
     label: 'Burial',
     note: 'Average — varies significantly by region',
     highlight: false,
@@ -38,7 +39,7 @@ const STATS = [
 const TABLE = {
   cols: ['Direct cremation', 'Attended funeral', 'Burial'],
   rows: [
-    { label: 'Typical cost',       vals: ['From £1,597', 'From £4,285', 'From £5,500'] },
+    { label: 'Typical cost',       vals: ['From £1,695', 'From £4,400', 'From £5,700'] },
     { label: 'Family can attend',  vals: ['Optional',    'Yes',         'Yes'] },
     { label: 'Full ceremony',      vals: ['No',          'Yes',         'Yes'] },
     { label: 'Remains returned',   vals: ['Ashes',       'Ashes or grave', 'Grave site'] },
@@ -134,7 +135,7 @@ const TIPS = [
   },
   {
     title: 'Consider a direct cremation',
-    body: 'At around £1,597 on average, a direct cremation is the most affordable option. It doesn\'t mean you can\'t celebrate a life — many families hold a separate memorial service at a location meaningful to them, with no time pressure.',
+    body: 'At around £1,695 on average, a direct cremation is the most affordable option. It doesn\'t mean you can\'t celebrate a life — many families hold a separate memorial service at a location meaningful to them, with no time pressure.',
   },
   {
     title: 'Ask for an itemised price list',
@@ -220,6 +221,10 @@ const INFO_ICON = (
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CostGuide() {
+  useEffect(() => {
+    document.title = 'UK Funeral Costs 2026 — Average Prices Explained | FuneralFair'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'How much does a funeral cost in the UK in 2026? Average prices for direct cremation (£1,695), attended cremation (£4,400), and burial — plus 7 ways to reduce costs.')
+  }, [])
   return (
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
@@ -234,14 +239,14 @@ export default function CostGuide() {
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-charcoal leading-tight mb-5">
             How much does a funeral cost in the UK?
-            <span className="block text-sage mt-1">(2025 guide)</span>
+            <span className="block text-sage mt-1">(2026 guide)</span>
           </h1>
           <p className="text-base sm:text-lg text-muted leading-relaxed mb-6">
             Thinking about funeral costs while you're grieving is genuinely hard. It's okay not to know where to start.
-            This guide explains everything clearly and honestly — no jargon, no pressure — so you can make decisions at your own pace.
+            This guide explains everything clearly and honestly, so you can make informed decisions at your own pace.
           </p>
           <div className="flex items-center gap-4 text-xs text-muted">
-            <span>Updated January 2025</span>
+            <span>Updated January 2026</span>
             <span>·</span>
             <span>8 min read</span>
           </div>
@@ -277,7 +282,7 @@ export default function CostGuide() {
           </SectionHeading>
           <p className="text-muted leading-relaxed mb-8">
             Funeral costs in the UK vary enormously depending on the type of service you choose, where you live,
-            and the funeral director you use. These are the national averages for 2024 as a starting point:
+            and the funeral director you use. These are the latest national averages as a starting point:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

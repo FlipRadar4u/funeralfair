@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -13,7 +13,6 @@ const QUESTIONS = [
     hint: 'Select all that apply',
     options: [
       { value: 'uc',  label: 'Universal Credit' },
-      { value: 'hb',  label: 'Housing Benefit' },
       { value: 'is',  label: 'Income Support' },
       { value: 'esa', label: 'Employment and Support Allowance (ESA)' },
       { value: 'pc',  label: 'Pension Credit' },
@@ -181,6 +180,13 @@ function CheckboxStep({ question, hint, options, selected, onChange, onNext }) {
 }
 
 function RadioStep({ question, hint, options, onSelect }) {
+  const [pending, setPending] = useState(null)
+
+  function handleClick(value) {
+    setPending(value)
+    onSelect(value)
+  }
+
   return (
     <div>
       <h2 className="text-xl sm:text-2xl font-bold text-charcoal mb-1.5 leading-snug">{question}</h2>
@@ -189,9 +195,11 @@ function RadioStep({ question, hint, options, onSelect }) {
 
       <div className="flex flex-col gap-2.5">
         {options.map(opt => (
-          <OptionCard key={opt.value} selected={false} onClick={() => onSelect(opt.value)}>
+          <OptionCard key={opt.value} selected={pending === opt.value} onClick={() => handleClick(opt.value)}>
             <span className="flex items-center gap-3">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full border-2 border-warm-border bg-white shrink-0" />
+              <span className={`flex items-center justify-center w-5 h-5 rounded-full border-2 shrink-0 transition-colors ${pending === opt.value ? 'border-sage bg-sage' : 'border-warm-border bg-white'}`}>
+                {pending === opt.value && <span className="w-2 h-2 rounded-full bg-white" />}
+              </span>
               {opt.label}
             </span>
           </OptionCard>
@@ -373,10 +381,13 @@ function ResultNotEligible({ reason, onRestart }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function GovernmentGrants() {
-  const [step,        setStep]     = useState(0)            // 0–4 = questions
-  const [done,        setDone]     = useState(false)
-  const [answers,     setAnswers]  = useState(BLANK_ANSWERS)
-  const [animating,   setAnimating]= useState(false)
+  useEffect(() => {
+    document.title = 'Funeral Expenses Payment — Government Grant Checker | FuneralFair'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Check if you can claim Funeral Expenses Payment — a government grant of up to £1,900 to help cover funeral costs. Five quick questions, no account needed.')
+  }, [])
+  const [step,    setStep]   = useState(0)
+  const [done,    setDone]   = useState(false)
+  const [answers, setAnswers]= useState(BLANK_ANSWERS)
 
   const totalSteps = QUESTIONS.length
   const q = QUESTIONS[step]

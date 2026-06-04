@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -7,8 +7,10 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'Compare Prices',    path: '/search' },
-    { label: 'Cost Guide',        path: '/cost-guide' },
-    { label: 'Government Grants', path: '/government-grants' },
+    { label: 'When Someone Dies', path: '/what-to-do-when-someone-dies' },
+    { label: 'Cost Guide',        path: '/funeral-costs/uk' },
+    { label: 'Guides',            path: '/blog' },
+    { label: 'About',             path: '/about' },
     { label: 'For Directors',     path: '/for-funeral-directors' },
   ]
 
@@ -18,73 +20,86 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-warm-border shadow-sm">
-      <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
+    <>
+      <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-warm-border shadow-sm">
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
 
-        <Link to="/" className="flex items-center gap-1 select-none" onClick={() => setMenuOpen(false)}>
-          <img src="/logo.png" alt="" className="h-10 w-auto" />
-          <span className="flex items-baseline gap-0.5">
-            <span className="text-xl font-bold tracking-tight text-charcoal">Funeral</span>
-            <span className="text-xl font-bold tracking-tight text-sage">Fair</span>
-          </span>
-        </Link>
+          <Link to="/" className="flex items-center gap-1 select-none" onClick={() => setMenuOpen(false)}>
+            <img src="/logo.png" alt="" className="h-10 w-auto" />
+            <span className="flex items-baseline gap-0.5">
+              <span className="text-xl font-bold tracking-tight text-charcoal">Funeral</span>
+              <span className="text-xl font-bold tracking-tight text-sage">Fair</span>
+            </span>
+          </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden sm:flex items-center gap-8">
-          {navLinks.map(({ label, path }) => (
-            <button
-              key={path}
-              onClick={() => go(path)}
-              className="text-sm font-medium text-muted hover:text-charcoal hover:underline underline-offset-4 decoration-sage"
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+          {/* Desktop nav */}
+          <nav className="hidden sm:flex items-center gap-8">
+            {navLinks.map(({ label, path }) => (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) =>
+                  `text-sm font-medium transition-colors ${isActive ? 'text-charcoal underline underline-offset-4 decoration-sage' : 'text-muted hover:text-charcoal hover:underline underline-offset-4 decoration-sage'}`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+          </nav>
 
-        {/* Burger button */}
-        <button
-          className="sm:hidden flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-muted hover:text-charcoal active:bg-sage-light"
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-          style={{ touchAction: 'manipulation' }}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d={menuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'}
-              style={{ transition: 'd 200ms ease' }}
-            />
-          </svg>
-        </button>
-      </div>
+          {/* Burger */}
+          <button
+            className="sm:hidden relative flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-charcoal active:bg-sage-light transition-colors"
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            style={{ touchAction: 'manipulation' }}
+          >
+            <span className="absolute w-5 transition-all duration-150"
+              style={{ opacity: menuOpen ? 0 : 1, transform: menuOpen ? 'rotate(45deg) scale(0.6)' : 'none' }}>
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </span>
+            <span className="absolute w-5 transition-all duration-150"
+              style={{ opacity: menuOpen ? 1 : 0, transform: menuOpen ? 'none' : 'rotate(-45deg) scale(0.6)' }}>
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </header>
 
-      {/* Mobile menu — always rendered so CSS can animate it */}
+      {/* Mobile menu — fixed below navbar, transform+opacity only (GPU composited) */}
       <div
-        className="sm:hidden overflow-hidden border-t border-warm-border"
+        className="sm:hidden fixed left-0 right-0 z-[49] bg-cream border-b border-warm-border shadow-lg"
         style={{
-          maxHeight: menuOpen ? '320px' : '0px',
+          top: '64px',
           opacity: menuOpen ? 1 : 0,
-          transition: 'max-height 300ms ease, opacity 200ms ease',
+          transform: menuOpen ? 'translateY(0)' : 'translateY(-6px)',
+          pointerEvents: menuOpen ? 'auto' : 'none',
+          transition: 'opacity 180ms cubic-bezier(0.4,0,0.2,1), transform 180ms cubic-bezier(0.4,0,0.2,1)',
+          willChange: 'transform, opacity',
         }}
       >
-        <nav className="px-5 py-2 flex flex-col bg-cream">
+        <nav className="px-5 pt-2 pb-4 flex flex-col">
           {navLinks.map(({ label, path }, i) => (
             <button
               key={path}
               onClick={() => go(path)}
-              className={`text-base font-medium text-charcoal text-left py-4 w-full active:text-sage ${i < navLinks.length - 1 ? 'border-b border-warm-border' : ''}`}
+              className={`text-base font-medium text-charcoal text-left py-4 w-full active:text-sage transition-colors duration-100 ${
+                i < navLinks.length - 1 ? 'border-b border-warm-border' : ''
+              }`}
               style={{ touchAction: 'manipulation' }}
             >
               {label}
             </button>
           ))}
-          <div className="py-3">
+          <div className="pt-3 pb-1">
             <button
               onClick={() => go('/search')}
-              className="w-full py-3 bg-sage text-white font-semibold rounded-xl text-sm active:bg-sage-dark"
+              className="w-full py-3.5 bg-sage active:bg-sage-dark text-white font-semibold rounded-xl text-sm transition-colors duration-100"
               style={{ touchAction: 'manipulation' }}
             >
               Find funeral directors →
@@ -92,6 +107,20 @@ export default function Navbar() {
           </div>
         </nav>
       </div>
-    </header>
+
+      {/* Backdrop */}
+      <div
+        className="sm:hidden fixed inset-0 z-40"
+        style={{
+          background: 'rgba(0,0,0,0.18)',
+          opacity: menuOpen ? 1 : 0,
+          pointerEvents: menuOpen ? 'auto' : 'none',
+          transition: 'opacity 180ms cubic-bezier(0.4,0,0.2,1)',
+          willChange: 'opacity',
+        }}
+        onClick={() => setMenuOpen(false)}
+        aria-hidden="true"
+      />
+    </>
   )
 }

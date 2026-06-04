@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -364,6 +364,10 @@ function Section({ section, sectionIndex, openItems, doneItems, onToggleOpen, on
 const ALL_ITEMS = SECTIONS.flatMap(s => s.items)
 
 export default function WhatToDo() {
+  useEffect(() => {
+    document.title = 'What To Do When Someone Dies — Step-by-Step Guide | FuneralFair'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'A practical step-by-step guide to what to do when someone dies in England or Wales — from the first 24 hours through to registering the death and arranging a funeral.')
+  }, [])
   const [openItems, setOpenItems] = useState(new Set())
   const [doneItems, setDoneItems] = useState(new Set())
 

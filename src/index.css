@@ -65,6 +65,15 @@ body {
   }
 }
 
+/* Hide scrollbar while keeping scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Smooth card hover lift */
 .card-hover {
   transition: box-shadow 200ms ease, transform 200ms ease;

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { useCompare } from '../context/CompareContext'
+import { CITIES } from '../data/cities'
 
 const RADIUS_MILES = 30
-
-// ─── Geocoding helpers (postcodes.io — free, no API key) ─────────────────────
 
 function fetchWithTimeout(url, options = {}, ms = 8000) {
   const controller = new AbortController()
@@ -31,50 +31,6 @@ async function geocodeInput(query) {
   return null
 }
 
-async function bulkGeocodePostcodes(postcodes) {
-  if (!postcodes.length) return {}
-  try {
-    const res = await fetchWithTimeout('https://api.postcodes.io/postcodes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postcodes: postcodes.slice(0, 100) }),
-    })
-    const json = await res.json()
-    const map = {}
-    for (const item of json.result ?? []) {
-      if (item.result) {
-        map[item.query] = { lat: item.result.latitude, lng: item.result.longitude }
-      }
-    }
-    return map
-  } catch (_) {
-    return {}
-  }
-}
-
-function extractOutcode(postcode) {
-  if (!postcode) return null
-  return postcode.trim().toUpperCase().split(' ')[0] || null
-}
-
-async function geocodeOutcodes(outcodes) {
-  if (!outcodes.length) return {}
-  const results = await Promise.all(
-    outcodes.map(async oc => {
-      try {
-        const r = await fetchWithTimeout(`https://api.postcodes.io/outcodes/${encodeURIComponent(oc)}`)
-        const j = await r.json()
-        return j.status === 200
-          ? [oc, { lat: j.result.latitude, lng: j.result.longitude }]
-          : null
-      } catch (_) {
-        return null
-      }
-    })
-  )
-  return Object.fromEntries(results.filter(Boolean))
-}
-
 // ─── Distance (Haversine) ─────────────────────────────────────────────────────
 
 function haversineMiles(lat1, lng1, lat2, lng2) {
@@ -90,7 +46,8 @@ function haversineMiles(lat1, lng1, lat2, lng2) {
 }
 
 function fmtMiles(m) {
-  return m < 1 ? `${(m * 5280).toFixed(0)} ft` : `${m.toFixed(1)} miles`
+  if (m < 0.1) return 'Nearby'
+  return `${m.toFixed(1)} miles`
 }
 
 // ─── UI components ────────────────────────────────────────────────────────────
@@ -121,6 +78,19 @@ function GreenBadge({ label, description }) {
   )
 }
 
+function StarRating({ rating, reviews }) {
+  if (!rating) return null
+  return (
+    <span className="flex items-center gap-1">
+      <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z" />
+      </svg>
+      <span className="text-xs font-semibold text-charcoal">{Number(rating).toFixed(1)}</span>
+      {reviews > 0 && <span className="text-xs text-muted">({reviews.toLocaleString()} reviews)</span>}
+    </span>
+  )
+}
+
 function PriceCell({ label, value }) {
   return (
     <div className="flex flex-col items-center justify-center bg-cream border border-warm-border rounded-xl px-3 py-4 text-center">
@@ -135,10 +105,13 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
   const cremation = formatPrice(director.cremation_price)
   const hasBadge  = director.nafd_member || director.saif_member
   const navigate  = useNavigate()
+  const { add, remove, isInList, list } = useCompare()
+  const inCompare  = isInList(director.id)
+  const listFull   = list.length >= 3 && !inCompare
 
   const lastUpdated = director.last_updated
     ? new Date(director.last_updated).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-    : 'May 2025'
+    : null
 
   return (
     <div
@@ -157,10 +130,15 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
             {director._miles != null && (
               <>
                 <span className="text-muted text-xs">·</span>
-                <span className="text-xs font-medium text-sage">{fmtMiles(director._miles)} away</span>
+                <span className="text-xs font-medium text-sage">{director._miles < 0.1 ? 'Nearby' : `${fmtMiles(director._miles)} away`}</span>
               </>
             )}
           </div>
+          {director.google_rating && (
+            <div className="mt-1.5">
+              <StarRating rating={director.google_rating} reviews={director.google_reviews} />
+            </div>
+          )}
         </div>
         {hasBadge && (
           <div className="flex gap-1.5 shrink-0 flex-wrap justify-end pt-0.5">
@@ -176,16 +154,35 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
         <PriceCell label="Direct cremation" value={cremation} />
       </div>
 
-      {/* CTA */}
-      <button
-        onClick={e => { e.stopPropagation(); navigate(`/director/${director.id}`, { state: { from: backUrl } }) }}
-        className="w-full py-2.5 rounded-xl bg-sage text-white font-semibold text-sm hover:bg-sage-dark mt-auto"
-      >
-        View details →
-      </button>
+      {/* CTAs */}
+      <div className="flex gap-2 mt-auto">
+        <button
+          onClick={e => { e.stopPropagation(); navigate(`/director/${director.id}`, { state: { from: backUrl } }) }}
+          className="flex-1 py-2.5 rounded-xl bg-sage text-white font-semibold text-sm hover:bg-sage-dark"
+        >
+          View details →
+        </button>
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            inCompare ? remove(director.id) : add(director)
+          }}
+          disabled={listFull}
+          title={listFull ? 'Max 3 directors in compare' : inCompare ? 'Remove from compare' : 'Add to compare'}
+          className={`px-3 py-2.5 rounded-xl border text-xs font-semibold transition-colors ${
+            inCompare
+              ? 'bg-sage-light border-sage text-sage'
+              : listFull
+              ? 'border-warm-border text-muted/40 cursor-not-allowed'
+              : 'border-warm-border text-muted hover:border-sage hover:text-sage'
+          }`}
+        >
+          {inCompare ? '✓ Added' : 'Compare'}
+        </button>
+      </div>
 
       {/* Last updated */}
-      <p className="text-xs text-muted text-center -mb-1">Last updated: {lastUpdated}</p>
+      {lastUpdated && <p className="text-xs text-muted text-center -mb-1">Last updated: {lastUpdated}</p>}
     </div>
   )
 }
@@ -228,14 +225,39 @@ export default function SearchResults() {
   const [searchParams] = useSearchParams()
   const location = searchParams.get('location') || ''
 
-  const [inputValue,   setInputValue]   = useState(location)
-  const [results,      setResults]      = useState([])
-  const [loading,      setLoading]      = useState(false)
-  const [loadingLabel, setLoadingLabel] = useState('Searching…')
-  const [fetchError,   setFetchError]   = useState(null)
-  const [searchMode,   setSearchMode]   = useState(null) // 'proximity' | 'text'
-  const [sortBy,       setSortBy]       = useState('distance') // 'distance' | 'attended' | 'cremation'
+  const [inputValue,    setInputValue]   = useState(location)
+  const [results,       setResults]      = useState([])
+  const [loading,       setLoading]      = useState(false)
+  const [loadingLabel,  setLoadingLabel] = useState('Searching…')
+  const [fetchError,    setFetchError]   = useState(null)
+  const [searchMode,    setSearchMode]   = useState(null) // 'proximity' | 'text'
+  const [sortBy,           setSortBy]          = useState('distance') // 'distance' | 'attended' | 'cremation'
+  const [directorCount,    setDirectorCount]   = useState(null)
+  const [maxDistance,      setMaxDistance]      = useState(RADIUS_MILES)
+  const [maxAttendedPrice, setMaxAttendedPrice] = useState(null)
+  const [maxCremationPrice,setMaxCremationPrice]= useState(null)
+  const [filterNafd,       setFilterNafd]       = useState(false)
+  const [filterSaif,       setFilterSaif]       = useState(false)
+  const [filtersOpen,      setFiltersOpen]      = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    document.title = location
+      ? `Funeral directors near ${location} — FuneralFair`
+      : 'Compare Funeral Directors — FuneralFair'
+    document.querySelector('meta[name="description"]')?.setAttribute('content',
+      location
+        ? `Compare funeral directors near ${location}. Real prices for attended funerals and direct cremation — no commission, no account needed.`
+        : 'Compare funeral directors near you with real, published prices. No commission, no account needed.'
+    )
+  }, [location])
+
+  useEffect(() => {
+    fetch('/api/director-count')
+      .then(r => r.json())
+      .then(data => { if (data.count != null) setDirectorCount(data.count) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => { setInputValue(location) }, [location])
 
@@ -249,6 +271,11 @@ export default function SearchResults() {
       setResults([])
       setSearchMode(null)
       setSortBy('distance')
+      setMaxDistance(RADIUS_MILES)
+      setMaxAttendedPrice(null)
+      setMaxCremationPrice(null)
+      setFilterNafd(false)
+      setFilterSaif(false)
       setLoadingLabel('Looking up postcode…')
 
       try {
@@ -266,27 +293,10 @@ export default function SearchResults() {
           if (cancelled) return
           const directors = await apiRes.json()
 
-          // Bulk-geocode full postcodes
-          setLoadingLabel('Mapping postcodes…')
-          const postcodes     = [...new Set(directors.map(d => d.postcode).filter(Boolean))]
-          const fullGeocoded  = await bulkGeocodePostcodes(postcodes)
-
-          // Fall back to outcode for any that didn't geocode
-          const needOutcode    = directors.filter(d => d.postcode && !fullGeocoded[d.postcode])
-          const uniqueOutcodes = [...new Set(needOutcode.map(d => extractOutcode(d.postcode)).filter(Boolean))]
-          const outcodeGeocoded = await geocodeOutcodes(uniqueOutcodes)
-
-          if (cancelled) return
-
-          setLoadingLabel('Calculating distances…')
           const withDist = directors
-            .map(d => {
-              const coords = fullGeocoded[d.postcode] ?? outcodeGeocoded[extractOutcode(d.postcode)]
-              if (!coords) return null
-              const miles = haversineMiles(userCoords.lat, userCoords.lng, coords.lat, coords.lng)
-              return { ...d, _miles: miles }
-            })
-            .filter(d => d !== null && d._miles <= RADIUS_MILES)
+            .filter(d => d.lat != null && d.lng != null)
+            .map(d => ({ ...d, _miles: haversineMiles(userCoords.lat, userCoords.lng, d.lat, d.lng) }))
+            .filter(d => d._miles <= RADIUS_MILES)
 
           setResults(withDist)
           setSearchMode('proximity')
@@ -328,6 +338,29 @@ export default function SearchResults() {
   const backUrl     = `/search?location=${encodeURIComponent(location)}`
   const isProximity = searchMode === 'proximity'
 
+  const filteredResults = results.filter(d => {
+    if (isProximity && d._miles != null && d._miles > maxDistance) return false
+    if (maxAttendedPrice  != null && d.attended_price  != null && d.attended_price  > maxAttendedPrice)  return false
+    if (maxCremationPrice != null && d.cremation_price != null && d.cremation_price > maxCremationPrice) return false
+    if (filterNafd && !d.nafd_member) return false
+    if (filterSaif && !d.saif_member) return false
+    return true
+  })
+  const activeFilterCount = [
+    isProximity && maxDistance < RADIUS_MILES,
+    maxAttendedPrice  != null,
+    maxCremationPrice != null,
+    filterNafd,
+    filterSaif,
+  ].filter(Boolean).length
+  function clearFilters() {
+    setMaxDistance(RADIUS_MILES)
+    setMaxAttendedPrice(null)
+    setMaxCremationPrice(null)
+    setFilterNafd(false)
+    setFilterSaif(false)
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
@@ -361,7 +394,9 @@ export default function SearchResults() {
             </h1>
             {!fetchError && resultCount > 0 && (
               <p className="text-muted mt-1 text-sm">
-                {resultCount} director{resultCount !== 1 ? 's' : ''} found
+                {activeFilterCount > 0
+                  ? `Showing ${filteredResults.length} of ${resultCount} director${resultCount !== 1 ? 's' : ''}`
+                  : `${resultCount} director${resultCount !== 1 ? 's' : ''} found`}
               </p>
             )}
             {!fetchError && resultCount === 0 && (
@@ -370,30 +405,133 @@ export default function SearchResults() {
           </div>
         )}
 
-        {/* ── Sort controls ── */}
+        {/* ── No commission notice ── */}
         {!loading && !fetchError && resultCount > 0 && (
-          <div className="flex items-center gap-2 flex-wrap mb-6">
-            <span className="text-xs text-muted font-medium mr-1">Sort by:</span>
-            {isProximity && (
+          <p className="text-xs text-muted mb-5 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-sage shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
+            FuneralFair never takes commission from funeral directors. Results are independent and uninfluenced by payments.
+          </p>
+        )}
+
+        {/* ── Sort + Filter controls ── */}
+        {!loading && !fetchError && resultCount > 0 && (
+          <div className="mb-6">
+            {/* Top row: label (left) + Filters button (right) */}
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-xs text-muted font-medium shrink-0">Sort by:</span>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-muted hover:text-charcoal underline underline-offset-2 transition-colors"
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  onClick={() => setFiltersOpen(o => !o)}
+                  style={{ touchAction: 'manipulation' }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${filtersOpen || activeFilterCount > 0 ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                >
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                  </svg>
+                  Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                </button>
+              </div>
+            </div>
+
+            {/* Sort pills — scrollable row, never wraps */}
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {isProximity && (
+                <button
+                  onClick={() => setSortBy('distance')}
+                  style={{ touchAction: 'manipulation' }}
+                  className={`shrink-0 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'distance' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                >Nearest first</button>
+              )}
               <button
-                onClick={() => setSortBy('distance')}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'distance' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
-              >
-                Nearest first
-              </button>
+                onClick={() => setSortBy('attended')}
+                style={{ touchAction: 'manipulation' }}
+                className={`shrink-0 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'attended' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+              >Attended: lowest price</button>
+              <button
+                onClick={() => setSortBy('cremation')}
+                style={{ touchAction: 'manipulation' }}
+                className={`shrink-0 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'cremation' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+              >Cremation: lowest price</button>
+            </div>
+
+            {/* Filter panel */}
+            {filtersOpen && (
+              <div className="mt-3 bg-white border border-warm-border rounded-2xl p-5 grid sm:grid-cols-2 gap-5">
+                {isProximity && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Distance</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {[5, 10, 20, RADIUS_MILES].map(d => (
+                        <button
+                          key={d}
+                          onClick={() => setMaxDistance(d)}
+                          style={{ touchAction: 'manipulation' }}
+                          className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${maxDistance === d ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                        >
+                          {d === RADIUS_MILES ? `Up to ${d} mi` : `Within ${d} mi`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Attended funeral</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[2000, 3000, 4000, 5000].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setMaxAttendedPrice(maxAttendedPrice === p ? null : p)}
+                        style={{ touchAction: 'manipulation' }}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${maxAttendedPrice === p ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                      >
+                        Under £{p.toLocaleString('en-GB')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Direct cremation</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[1000, 1500, 2000].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setMaxCremationPrice(maxCremationPrice === p ? null : p)}
+                        style={{ touchAction: 'manipulation' }}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${maxCremationPrice === p ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                      >
+                        Under £{p.toLocaleString('en-GB')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Accreditation</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setFilterNafd(v => !v)}
+                      style={{ touchAction: 'manipulation' }}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${filterNafd ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                    >NAFD member</button>
+                    <button
+                      onClick={() => setFilterSaif(v => !v)}
+                      style={{ touchAction: 'manipulation' }}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${filterSaif ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                    >SAIF member</button>
+                  </div>
+                </div>
+              </div>
             )}
-            <button
-              onClick={() => setSortBy('attended')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'attended' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
-            >
-              Attended: cheapest first
-            </button>
-            <button
-              onClick={() => setSortBy('cremation')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'cremation' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
-            >
-              Cremation: cheapest first
-            </button>
           </div>
         )}
 
@@ -410,21 +548,38 @@ export default function SearchResults() {
           <div className="mt-4">
 
             {/* How it works */}
-            <p className="text-center text-xs font-semibold tracking-widest uppercase text-muted mb-8">
+            <p className="text-center text-xs font-semibold tracking-widest uppercase text-muted mb-6">
               How it works
             </p>
 
-            <div className="relative flex flex-col sm:flex-row items-start sm:items-start justify-center gap-10 sm:gap-0 mb-12">
-
-              {/* Dashed connector — desktop only */}
-              <div className="hidden sm:block absolute top-5 left-1/2 -translate-x-1/2 w-[55%] border-t border-dashed border-warm-border" style={{ zIndex: 0 }} />
-
+            {/* Mobile: numbered rows */}
+            <div className="sm:hidden flex flex-col gap-5 mb-10">
               {[
                 { n: 1, label: 'Enter your location', sub: 'Postcode or town name' },
                 { n: 2, label: 'Compare prices',      sub: 'Real prices from local funeral directors' },
                 { n: 3, label: 'Contact direct',      sub: 'No middleman, no sales calls' },
               ].map(({ n, label, sub }) => (
-                <div key={n} className="relative flex flex-col items-center text-center sm:flex-1 px-4" style={{ zIndex: 1 }}>
+                <div key={n} className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-sage flex items-center justify-center shrink-0">
+                    <span className="text-white text-sm font-bold">{n}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-charcoal text-sm leading-snug">{label}</p>
+                    <p className="text-muted text-xs mt-0.5 leading-relaxed">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: centered columns with connector line */}
+            <div className="hidden sm:flex relative items-start justify-center gap-0 mb-12">
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[55%] border-t border-dashed border-warm-border" style={{ zIndex: 0 }} />
+              {[
+                { n: 1, label: 'Enter your location', sub: 'Postcode or town name' },
+                { n: 2, label: 'Compare prices',      sub: 'Real prices from local funeral directors' },
+                { n: 3, label: 'Contact direct',      sub: 'No middleman, no sales calls' },
+              ].map(({ n, label, sub }) => (
+                <div key={n} className="relative flex flex-col items-center text-center flex-1 px-4" style={{ zIndex: 1 }}>
                   <div className="w-10 h-10 rounded-full bg-sage flex items-center justify-center mb-3 shrink-0">
                     <span className="text-white text-sm font-bold">{n}</span>
                   </div>
@@ -441,7 +596,7 @@ export default function SearchResults() {
                   'No account needed',
                   'Completely free',
                   'No sales calls',
-                  '208 funeral directors listed',
+                  directorCount != null ? `${directorCount.toLocaleString()} funeral directors listed` : '208+ funeral directors listed',
                 ].map(item => (
                   <div key={item} className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-sage shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -460,15 +615,26 @@ export default function SearchResults() {
           <EmptyState location={location} isProximity={isProximity} />
         )}
 
+        {!loading && !fetchError && resultCount > 0 && filteredResults.length === 0 && (
+          <div className="flex flex-col items-center text-center py-16 px-4">
+            <p className="text-charcoal font-semibold mb-1">No directors match your filters</p>
+            <p className="text-muted text-sm mb-4">Try widening your filters or removing some criteria.</p>
+            <button onClick={clearFilters} className="px-4 py-2 bg-sage text-white text-sm font-semibold rounded-xl hover:bg-sage-dark transition-colors">
+              Clear all filters
+            </button>
+          </div>
+        )}
+
         {/* ── Results ── */}
-        {!loading && !fetchError && resultCount > 0 && (() => {
-          const featured = results.filter(r => r.is_featured)
-          const regular  = results.filter(r => !r.is_featured)
-          const sorted   = [...regular].sort((a, b) => {
+        {!loading && !fetchError && filteredResults.length > 0 && (() => {
+          const sortFn = (a, b) => {
             if (sortBy === 'attended')  return (a.attended_price  ?? 999999) - (b.attended_price  ?? 999999)
             if (sortBy === 'cremation') return (a.cremation_price ?? 999999) - (b.cremation_price ?? 999999)
             return (a._miles ?? 999) - (b._miles ?? 999)
-          })
+          }
+          const featured = [...filteredResults.filter(r => r.is_featured)].sort(sortFn)
+          const regular  = filteredResults.filter(r => !r.is_featured)
+          const sorted   = [...regular].sort(sortFn)
           return (
             <>
               {/* Featured Partner section */}
@@ -509,6 +675,26 @@ export default function SearchResults() {
         })()}
 
       </main>
+
+      {/* ── City links ── */}
+      <div className="border-t border-warm-border bg-cream">
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10">
+          <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-5">Find funeral directors by city</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Object.entries(CITIES).map(([slug, { name }]) => (
+              <div key={slug}>
+                <p className="text-sm font-semibold text-charcoal mb-1">{name}</p>
+                <Link to={`/funeral-directors/${slug}`} className="block text-xs text-muted hover:text-charcoal transition-colors leading-relaxed">
+                  Funeral directors
+                </Link>
+                <Link to={`/direct-cremation/${slug}`} className="block text-xs text-muted hover:text-charcoal transition-colors leading-relaxed">
+                  Direct cremation
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <Footer />
     </div>
