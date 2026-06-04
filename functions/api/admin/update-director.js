@@ -23,7 +23,7 @@ export async function onRequestPost(context) {
   const allowed = ['name','town','postcode','website',
                    'attended_price','cremation_price','nafd_member','saif_member',
                    'is_featured','verified']
-  const patch = {}
+  const patch = { last_updated: new Date().toISOString() }
   for (const k of allowed) {
     if (k in updates) patch[k] = updates[k]
   }

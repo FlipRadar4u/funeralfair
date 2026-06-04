@@ -198,17 +198,17 @@ export default function CityPage() {
         {/* ── City stats ── */}
         {!loading && directors.length > 0 && (
           <div className="grid grid-cols-3 divide-x divide-warm-border border border-warm-border rounded-2xl overflow-hidden bg-white shadow-sm mb-8">
-            <div className="px-4 py-4 text-center">
+            <div className="px-3 py-4 text-center">
               <p className="text-xl font-bold text-charcoal">{directors.length}</p>
-              <p className="text-xs text-muted mt-0.5">funeral directors</p>
+              <p className="text-xs text-muted mt-0.5 leading-tight">Directors</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-3 py-4 text-center">
               <p className="text-xl font-bold text-charcoal">{avgAttended ? `£${avgAttended.toLocaleString('en-GB')}` : '—'}</p>
-              <p className="text-xs text-muted mt-0.5">avg. attended funeral</p>
+              <p className="text-xs text-muted mt-0.5 leading-tight">Avg. attended</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-3 py-4 text-center">
               <p className="text-xl font-bold text-charcoal">{avgCremation ? `£${avgCremation.toLocaleString('en-GB')}` : '—'}</p>
-              <p className="text-xs text-muted mt-0.5">avg. direct cremation</p>
+              <p className="text-xs text-muted mt-0.5 leading-tight">Avg. cremation</p>
             </div>
           </div>
         )}

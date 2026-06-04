@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+
+const CHECK_ICON = (
+  <svg className="w-4 h-4 text-sage shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  </svg>
+)
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -268,6 +274,64 @@ export default function Home() {
             {FAQS.map(({ q, a, link }) => (
               <FaqItem key={q} q={q} a={a} link={link} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── For funeral directors ── */}
+      <section className="px-4 sm:px-6 py-14 sm:py-16 bg-sage-light border-t border-sage-border">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-2xl border border-sage-border shadow-sm overflow-hidden">
+            <div className="grid lg:grid-cols-[1fr_300px]">
+
+              {/* Left: copy */}
+              <div className="px-8 sm:px-10 py-10 border-b lg:border-b-0 lg:border-r border-sage-border">
+                <p className="text-xs font-semibold tracking-widest uppercase text-sage mb-3">For funeral directors</p>
+                <h2 className="text-2xl font-bold text-charcoal mb-3 leading-snug">
+                  List your business for free.
+                </h2>
+                <p className="text-muted text-sm leading-relaxed mb-6">
+                  FuneralFair is free to appear on — always. Unlike paid directories that charge a listing fee just to show up in results, we never charge for a standard listing. Families find you based on location and price, not on who paid the most.
+                </p>
+                <ul className="flex flex-col gap-3">
+                  {[
+                    'Free standard listing — no monthly fee, ever',
+                    'Families contact you directly — we take no commission',
+                    'Results ranked by proximity and price, not payment',
+                  ].map(item => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-charcoal">
+                      {CHECK_ICON}
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Right: CTA */}
+              <div className="px-8 py-10 bg-sage-light flex flex-col justify-center gap-5">
+                <div>
+                  <p className="text-base font-bold text-charcoal mb-1.5">Ready to get started?</p>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Already listed? Claim your listing to verify your details and show families you're active.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Link
+                    to="/for-funeral-directors"
+                    className="w-full text-center py-3 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl text-sm transition-colors shadow-sm"
+                  >
+                    List your business free →
+                  </Link>
+                  <Link
+                    to="/for-funeral-directors"
+                    className="w-full text-center py-3 border border-sage-border bg-white hover:bg-cream text-charcoal font-semibold rounded-xl text-sm transition-colors"
+                  >
+                    Claim your listing
+                  </Link>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       </section>

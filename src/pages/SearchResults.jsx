@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
 import { CITIES } from '../data/cities'
+
+const DirectorsMap = lazy(() => import('../components/DirectorsMap'))
 
 const RADIUS_MILES = 30
 
@@ -257,6 +259,8 @@ export default function SearchResults() {
   const [filterNafd,       setFilterNafd]       = useState(false)
   const [filterSaif,       setFilterSaif]       = useState(false)
   const [filtersOpen,      setFiltersOpen]      = useState(false)
+  const [showMap,          setShowMap]          = useState(false)
+  const [userCoords,       setUserCoords]       = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -294,17 +298,19 @@ export default function SearchResults() {
       setMaxCremationPrice(null)
       setFilterNafd(false)
       setFilterSaif(false)
-      setLoadingLabel('Looking up postcode…')
+      setShowMap(false)
+      setUserCoords(null)
+      setLoadingLabel('Looking up location…')
 
       try {
         // ── Step 1: try to geocode the search input ────────────────────────
-        const userCoords = await geocodeInput(location)
+        const coords = await geocodeInput(location)
 
         if (cancelled) return
 
-        if (userCoords) {
+        if (coords) {
           // ── Proximity search ──────────────────────────────────────────────
-          setLoadingLabel('Loading directors…')
+          setLoadingLabel('Finding directors near you…')
 
           const apiRes = await fetchWithTimeout('/api/directors')
           if (!apiRes.ok) { setFetchError(`Error loading directors (${apiRes.status})`); return }
@@ -313,12 +319,13 @@ export default function SearchResults() {
 
           const withDist = directors
             .filter(d => d.lat != null && d.lng != null)
-            .map(d => ({ ...d, _miles: haversineMiles(userCoords.lat, userCoords.lng, d.lat, d.lng) }))
+            .map(d => ({ ...d, _miles: haversineMiles(coords.lat, coords.lng, d.lat, d.lng) }))
             .filter(d => d._miles <= RADIUS_MILES)
 
           setResults(withDist)
           setSearchMode('proximity')
           setSortBy('distance')
+          setUserCoords(coords)
 
         } else {
           // ── Text search fallback ──────────────────────────────────────────
@@ -449,6 +456,18 @@ export default function SearchResults() {
                     Clear
                   </button>
                 )}
+                {isProximity && (
+                  <button
+                    onClick={() => setShowMap(m => !m)}
+                    style={{ touchAction: 'manipulation' }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${showMap ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                  >
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                    </svg>
+                    {showMap ? 'Hide map' : 'Map'}
+                  </button>
+                )}
                 <button
                   onClick={() => setFiltersOpen(o => !o)}
                   style={{ touchAction: 'manipulation' }}
@@ -462,7 +481,7 @@ export default function SearchResults() {
               </div>
             </div>
 
-            {/* Sort pills — scrollable row, never wraps */}
+            {/* Sort pills + map toggle */}
             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {isProximity && (
                 <button
@@ -626,6 +645,24 @@ export default function SearchResults() {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* ── Map ── */}
+        {showMap && !loading && filteredResults.length > 0 && (
+          <div className="mb-6 rounded-2xl overflow-hidden border border-warm-border shadow-sm" style={{ height: '380px' }}>
+            <Suspense fallback={
+              <div className="h-full bg-cream flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full border-2 border-sage animate-spin" style={{ borderTopColor: 'transparent' }} />
+              </div>
+            }>
+              <DirectorsMap
+                directors={filteredResults}
+                userCoords={userCoords}
+                radiusMiles={maxDistance}
+                onView={id => navigate(`/director/${id}`, { state: { from: `/search?location=${encodeURIComponent(location)}` } })}
+              />
+            </Suspense>
           </div>
         )}
 

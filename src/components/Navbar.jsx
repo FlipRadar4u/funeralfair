@@ -33,7 +33,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden sm:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6">
             {navLinks.map(({ label, path }) => (
               <NavLink
                 key={path}
@@ -49,7 +49,7 @@ export default function Navbar() {
 
           {/* Burger */}
           <button
-            className="sm:hidden relative flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-charcoal active:bg-sage-light transition-colors"
+            className="lg:hidden relative flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-charcoal active:bg-sage-light transition-colors"
             onClick={() => setMenuOpen(o => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
@@ -73,7 +73,7 @@ export default function Navbar() {
 
       {/* Mobile menu — fixed below navbar, transform+opacity only (GPU composited) */}
       <div
-        className="sm:hidden fixed left-0 right-0 z-[49] bg-cream border-b border-warm-border shadow-lg"
+        className="lg:hidden fixed left-0 right-0 z-[49] bg-cream border-b border-warm-border shadow-lg"
         style={{
           top: '64px',
           opacity: menuOpen ? 1 : 0,
@@ -110,7 +110,7 @@ export default function Navbar() {
 
       {/* Backdrop */}
       <div
-        className="sm:hidden fixed inset-0 z-40"
+        className="lg:hidden fixed inset-0 z-40"
         style={{
           background: 'rgba(0,0,0,0.18)',
           opacity: menuOpen ? 1 : 0,

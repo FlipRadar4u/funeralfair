@@ -5,9 +5,9 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 function formatPrice(val) {
-  if (val == null) return '—'
+  if (val == null) return null
   const n = Number(val)
-  if (isNaN(n)) return '—'
+  if (isNaN(n)) return null
   return `£${n.toLocaleString('en-GB')}`
 }
 
@@ -263,7 +263,7 @@ export default function DirectorDetail() {
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 pb-24 sm:pb-12">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
 
         {/* Back link */}
         <Link
@@ -381,14 +381,18 @@ export default function DirectorDetail() {
                 <tbody>
                   <tr className="border-b border-warm-border">
                     <td className="py-4 text-charcoal text-sm">Attended funeral</td>
-                    <td className="py-4 text-right font-bold text-charcoal text-lg tabular-nums">
-                      {formatPrice(director.attended_price)}
+                    <td className="py-4 text-right tabular-nums">
+                      {formatPrice(director.attended_price)
+                        ? <span className="font-bold text-charcoal text-lg">{formatPrice(director.attended_price)}</span>
+                        : <span className="text-sm text-muted">Price on request</span>}
                     </td>
                   </tr>
                   <tr>
                     <td className="py-4 text-charcoal text-sm">Direct cremation</td>
-                    <td className="py-4 text-right font-bold text-charcoal text-lg tabular-nums">
-                      {formatPrice(director.cremation_price)}
+                    <td className="py-4 text-right tabular-nums">
+                      {formatPrice(director.cremation_price)
+                        ? <span className="font-bold text-charcoal text-lg">{formatPrice(director.cremation_price)}</span>
+                        : <span className="text-sm text-muted">Price on request</span>}
                     </td>
                   </tr>
                 </tbody>

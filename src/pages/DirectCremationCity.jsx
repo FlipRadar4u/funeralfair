@@ -203,17 +203,17 @@ export default function DirectCremationCity() {
         {/* ── City stats ── */}
         {!loading && directors.length > 0 && (
           <div className="grid grid-cols-3 divide-x divide-warm-border border border-warm-border rounded-2xl overflow-hidden bg-white shadow-sm mb-8">
-            <div className="px-4 py-4 text-center">
+            <div className="px-3 py-4 text-center">
               <p className="text-xl font-bold text-charcoal">{directors.length}</p>
-              <p className="text-xs text-muted mt-0.5">providers near you</p>
+              <p className="text-xs text-muted mt-0.5 leading-tight">Providers</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-3 py-4 text-center">
               <p className="text-xl font-bold text-charcoal">{lowestPrice ? `£${lowestPrice.toLocaleString('en-GB')}` : '—'}</p>
-              <p className="text-xs text-muted mt-0.5">lowest price</p>
+              <p className="text-xs text-muted mt-0.5 leading-tight">Lowest price</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-3 py-4 text-center">
               <p className="text-xl font-bold text-charcoal">{avgCremation ? `£${avgCremation.toLocaleString('en-GB')}` : '—'}</p>
-              <p className="text-xs text-muted mt-0.5">avg. price nearby</p>
+              <p className="text-xs text-muted mt-0.5 leading-tight">Avg. nearby</p>
             </div>
           </div>
         )}
