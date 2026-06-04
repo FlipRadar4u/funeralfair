@@ -2,21 +2,17 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
 
-// Custom sage-green pin — avoids Vite's broken default marker image paths
-function makePin(featured) {
-  const fill = featured ? '#5a7e5e' : '#7a9e7e'
+// Custom sage-green pins — created once at module load, not per render
+function makePin(fill) {
   const svg = `<svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg">
     <path d="M11 0C4.925 0 0 4.925 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.925 17.075 0 11 0z" fill="${fill}" stroke="white" stroke-width="1.5"/>
     <circle cx="11" cy="11" r="4" fill="white"/>
   </svg>`
-  return L.divIcon({
-    className: '',
-    html: svg,
-    iconSize: [22, 30],
-    iconAnchor: [11, 30],
-    popupAnchor: [0, -32],
-  })
+  return L.divIcon({ className: '', html: svg, iconSize: [22, 30], iconAnchor: [11, 30], popupAnchor: [0, -32] })
 }
+
+const PIN_DEFAULT  = makePin('#7a9e7e')
+const PIN_FEATURED = makePin('#5a7e5e')
 
 function BoundsFitter({ directors }) {
   const map = useMap()
@@ -63,7 +59,7 @@ export default function DirectorsMap({ directors, onView, userCoords, radiusMile
         />
       )}
       {valid.map(d => (
-        <Marker key={d.id} position={[d.lat, d.lng]} icon={makePin(d.is_featured)}>
+        <Marker key={d.id} position={[d.lat, d.lng]} icon={d.is_featured ? PIN_FEATURED : PIN_DEFAULT}>
           <Popup minWidth={190}>
             <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
               {d.is_featured && (

@@ -379,22 +379,19 @@ export default function DirectorDetail() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-warm-border">
-                    <td className="py-4 text-charcoal text-sm">Attended funeral</td>
-                    <td className="py-4 text-right tabular-nums">
-                      {formatPrice(director.attended_price)
-                        ? <span className="font-bold text-charcoal text-lg">{formatPrice(director.attended_price)}</span>
-                        : <span className="text-sm text-muted">Price on request</span>}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 text-charcoal text-sm">Direct cremation</td>
-                    <td className="py-4 text-right tabular-nums">
-                      {formatPrice(director.cremation_price)
-                        ? <span className="font-bold text-charcoal text-lg">{formatPrice(director.cremation_price)}</span>
-                        : <span className="text-sm text-muted">Price on request</span>}
-                    </td>
-                  </tr>
+                  {[
+                    { label: 'Attended funeral',  val: formatPrice(director.attended_price) },
+                    { label: 'Direct cremation',  val: formatPrice(director.cremation_price) },
+                  ].map(({ label, val }, i) => (
+                    <tr key={label} className={i === 0 ? 'border-b border-warm-border' : ''}>
+                      <td className="py-4 text-charcoal text-sm">{label}</td>
+                      <td className="py-4 text-right tabular-nums">
+                        {val
+                          ? <span className="font-bold text-charcoal text-lg">{val}</span>
+                          : <span className="text-sm text-muted">Price on request</span>}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
 
