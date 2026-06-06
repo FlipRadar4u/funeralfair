@@ -816,7 +816,7 @@ export default function DirectorDetail() {
       </main>
 
       {/* ── Sticky mobile CTA bar — hidden when enquiry form is in view ── */}
-      {!loading && director && !formVisible && createPortal(
+      {!loading && director && !formVisible && (director.phone || director.has_email || director.website) && createPortal(
         <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-warm-border shadow-lg px-4 py-3 flex gap-3">
           {director.phone && (
             <a
