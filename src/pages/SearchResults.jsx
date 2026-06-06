@@ -131,7 +131,7 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
 
       {/* Name + town + distance + badges */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h2 className="font-semibold text-charcoal text-base leading-snug">
             {director.name}
           </h2>
@@ -149,8 +149,14 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
               <StarRating rating={director.google_rating} reviews={director.google_reviews} />
             </div>
           )}
+          {hasBadge && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {director.nafd_member && <GreenBadge label="NAFD member" description="National Association of Funeral Directors" />}
+              {director.saif_member && <GreenBadge label="SAIF member" description="Society of Allied & Independent Funeral Directors" />}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="shrink-0">
           {director.claimed_at && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage text-white">
               <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -159,20 +165,21 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
               Listing verified
             </span>
           )}
-          {hasBadge && (
-            <div className="flex gap-1.5 flex-wrap justify-end">
-              {director.nafd_member && <GreenBadge label="NAFD member" description="National Association of Funeral Directors" />}
-              {director.saif_member && <GreenBadge label="SAIF member" description="Society of Allied & Independent Funeral Directors" />}
-            </div>
-          )}
         </div>
       </div>
 
       {/* Prices */}
-      <div className="grid grid-cols-2 gap-3">
-        <PriceCell label="Attended funeral" value={attended} />
-        <PriceCell label="Direct cremation" value={cremation} />
-      </div>
+      {director.attended_price != null || director.cremation_price != null ? (
+        <div className="grid grid-cols-2 gap-3">
+          <PriceCell label="Attended funeral" value={attended} />
+          <PriceCell label="Direct cremation" value={cremation} />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center bg-cream border border-dashed border-warm-border rounded-xl px-3 py-4 text-center gap-1">
+          <span className="text-xs font-medium text-muted">Prices not yet published</span>
+          <span className="text-xs text-muted/70">View their listing to enquire</span>
+        </div>
+      )}
 
       {/* CTAs */}
       <div className="flex gap-2 mt-auto">

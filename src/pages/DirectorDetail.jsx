@@ -227,11 +227,34 @@ function WriteReviewForm({ directorId }) {
 function ReviewsSection({ director }) {
   const [showForm, setShowForm] = useState(false)
   const reviews = director.reviews || []
+
+  // No reviews yet — show minimal link so the page doesn't have a "No reviews" dead-end
+  if (reviews.length === 0 && !showForm) {
+    return (
+      <p className="text-xs text-center text-muted">
+        <button onClick={() => setShowForm(true)} className="text-sage font-semibold hover:underline">
+          Leave a review
+        </button>
+        {' '}for {director.name}
+      </p>
+    )
+  }
+
+  // Form only (no reviews yet but user clicked to write one)
+  if (reviews.length === 0 && showForm) {
+    return (
+      <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+        <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Leave a review</h2>
+        <WriteReviewForm directorId={director.id} />
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">
-          Reviews{reviews.length > 0 ? ` (${reviews.length})` : ''}
+          Reviews ({reviews.length})
         </h2>
         {!showForm && (
           <button onClick={() => setShowForm(true)} className="text-xs font-semibold text-sage hover:underline">
@@ -239,25 +262,20 @@ function ReviewsSection({ director }) {
           </button>
         )}
       </div>
-      {reviews.length === 0 && !showForm && (
-        <p className="text-sm text-muted pt-2 pb-1">No reviews yet. Be the first to share your experience.</p>
-      )}
-      {reviews.length > 0 && (
-        <div className="mt-3 divide-y divide-warm-border">
-          {reviews.map(r => (
-            <div key={r.id} className="py-4">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1.5">
-                <ReviewStars rating={r.rating} />
-                <span className="text-sm font-semibold text-charcoal">{r.reviewer_name}</span>
-                <span className="text-xs text-muted">
-                  · {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </span>
-              </div>
-              <p className="text-sm text-charcoal leading-relaxed">{r.body}</p>
+      <div className="mt-3 divide-y divide-warm-border">
+        {reviews.map(r => (
+          <div key={r.id} className="py-4">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1.5">
+              <ReviewStars rating={r.rating} />
+              <span className="text-sm font-semibold text-charcoal">{r.reviewer_name}</span>
+              <span className="text-xs text-muted">
+                · {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-sm text-charcoal leading-relaxed">{r.body}</p>
+          </div>
+        ))}
+      </div>
       {showForm && <WriteReviewForm directorId={director.id} />}
     </div>
   )
@@ -423,9 +441,10 @@ export default function DirectorDetail() {
   const navigate = useNavigate()
   const backUrl = state?.from || '/search'
 
-  const [director, setDirector] = useState(null)
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
+  const [director,     setDirector]    = useState(null)
+  const [loading,      setLoading]     = useState(true)
+  const [error,        setError]       = useState(null)
+  const [formVisible,  setFormVisible] = useState(false)
 
   useEffect(() => {
     fetch(`/api/director/${id}`)
@@ -483,11 +502,21 @@ export default function DirectorDetail() {
   // Remove schema tag when leaving the page
   useEffect(() => () => { document.getElementById('ff-schema')?.remove() }, [])
 
+  // Hide sticky CTA bar when enquiry form scrolls into view
+  useEffect(() => {
+    if (!director) return
+    const el = document.getElementById('enquiry-form')
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => setFormVisible(entry.isIntersecting), { threshold: 0.1 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [director])
+
   return (
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 pb-24 sm:pb-12">
 
         {/* Back link */}
         <Link
@@ -786,8 +815,8 @@ export default function DirectorDetail() {
 
       </main>
 
-      {/* ── Sticky mobile CTA bar ── */}
-      {!loading && director && createPortal(
+      {/* ── Sticky mobile CTA bar — hidden when enquiry form is in view ── */}
+      {!loading && director && !formVisible && createPortal(
         <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-warm-border shadow-lg px-4 py-3 flex gap-3">
           {director.phone && (
             <a
