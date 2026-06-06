@@ -47,7 +47,6 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
     nafd_member:     !!director.nafd_member,
     saif_member:     !!director.saif_member,
     is_featured:     !!director.is_featured,
-    verified:        !!director.verified,
   })
   const [saving,         setSaving]        = useState(false)
   const [error,          setError]         = useState(null)
@@ -127,11 +126,33 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
         {/* Body */}
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+          {/* Claimed status */}
+          {director.claimed_at ? (
+            <div style={{ background: '#edf3ee', border: '1px solid #c5d9c7', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7a9e7e', textTransform: 'uppercase', letterSpacing: '1px' }}>✓ Listing claimed</p>
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#2c2c2c' }}>
+                  {new Date(director.claimed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+              {director.claim_token && (
+                <a href={`/dashboard/${director.claim_token}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: '12px', fontWeight: 600, color: '#7a9e7e', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  View dashboard →
+                </a>
+              )}
+            </div>
+          ) : (
+            <div style={{ background: '#faf8f6', border: '1px solid #e8e2db', borderRadius: '10px', padding: '12px 16px' }}>
+              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#9c968f', textTransform: 'uppercase', letterSpacing: '1px' }}>Not yet claimed</p>
+              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b6560' }}>This director hasn't claimed their listing yet.</p>
+            </div>
+          )}
+
           {/* Toggles */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {[
               { key: 'is_featured', label: 'Featured partner' },
-              { key: 'verified',    label: 'Verified' },
               { key: 'nafd_member', label: 'NAFD member' },
               { key: 'saif_member', label: 'SAIF member' },
             ].map(({ key, label }) => (
@@ -267,7 +288,7 @@ function OverviewTab({ directors }) {
   const featured       = directors.filter(d => d.is_featured).length
   const nafd           = directors.filter(d => d.nafd_member).length
   const saif           = directors.filter(d => d.saif_member).length
-  const verified       = directors.filter(d => d.verified).length
+  // verified field deprecated — replaced by claimed_at indicator in edit modal
   const withEmail      = directors.filter(d => d.email).length
   const withGoogleRating = directors.filter(d => d.google_rating != null).length
   const claimed        = directors.filter(d => d.claimed_at).length
@@ -307,7 +328,7 @@ function OverviewTab({ directors }) {
 
       {/* Secondary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Verified" value={verified.toLocaleString()} sub={pct(verified, total)} />
+        <StatCard label="With email" value={withEmail.toLocaleString()} sub={pct(withEmail, total)} />
         <StatCard label="Google ratings" value={withGoogleRating.toLocaleString()} sub={withGoogleRating === 0 ? 'Run enrichment script' : pct(withGoogleRating, total)} />
         <StatCard label="NAFD members" value={nafd.toLocaleString()} sub={pct(nafd, total)} />
         <StatCard label="SAIF members" value={saif.toLocaleString()} sub={pct(saif, total)} />
@@ -489,8 +510,6 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
           {[
             { label: '★ Feature',    patch: { is_featured: true } },
             { label: 'Un-feature',   patch: { is_featured: false } },
-            { label: '✓ Verify',     patch: { verified: true } },
-            { label: 'Un-verify',    patch: { verified: false } },
           ].map(({ label, patch }) => (
             <button
               key={label}
@@ -884,6 +903,84 @@ function ClaimsTab({ directors }) {
   )
 }
 
+// ─── Reviews tab ─────────────────────────────────────────────────────────────
+
+function ReviewsTab({ pw }) {
+  const [reviews,  setReviews]  = useState(null)
+  const [loading,  setLoading]  = useState({})
+
+  function loadReviews() {
+    return fetch(`/api/admin/reviews?pw=${encodeURIComponent(pw)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(setReviews)
+  }
+
+  useEffect(() => { loadReviews() }, [pw])
+
+  async function act(reviewId, approve) {
+    setLoading(l => ({ ...l, [reviewId]: true }))
+    await fetch('/api/admin/moderate-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pw, reviewId, approve }),
+    })
+    setLoading(l => ({ ...l, [reviewId]: false }))
+    await loadReviews()
+  }
+
+  const STAR_PATH = 'M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z'
+
+  if (!reviews) return <Spinner />
+
+  if (!reviews.length) {
+    return (
+      <div className="bg-white rounded-2xl border border-warm-border p-8 text-center shadow-sm">
+        <p className="text-charcoal font-semibold mb-2">No reviews awaiting moderation</p>
+        <p className="text-sm text-muted">Submitted reviews will appear here for approval.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {reviews.map(r => (
+        <div key={r.id} className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-semibold text-charcoal">{r.funeral_directors?.name || '—'}</p>
+              <p className="text-xs text-muted mb-2">{r.funeral_directors?.town}</p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1.5">
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(i => (
+                    <svg key={i} className={`w-3.5 h-3.5 ${i <= r.rating ? 'text-amber-400' : 'text-warm-border'}`} viewBox="0 0 20 20" fill="currentColor">
+                      <path d={STAR_PATH} />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-sm font-semibold text-charcoal">{r.reviewer_name}</span>
+                <span className="text-xs text-muted">
+                  · {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+              </div>
+              <p className="text-sm text-charcoal leading-relaxed">{r.body}</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => act(r.id, true)} disabled={loading[r.id]}
+                className="px-4 py-2 text-sm font-semibold rounded-xl bg-sage hover:bg-sage-dark text-white disabled:opacity-50">
+                {loading[r.id] ? '…' : 'Approve'}
+              </button>
+              <button onClick={() => act(r.id, false)} disabled={loading[r.id]}
+                className="px-4 py-2 text-sm font-semibold rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50">
+                {loading[r.id] ? '…' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -891,8 +988,9 @@ const TABS = [
   { id: 'claims',     label: 'Claims' },
   { id: 'directors',  label: 'Directors' },
   { id: 'featured',   label: 'Featured' },
-  { id: 'review',     label: 'Review' },
+  { id: 'review',     label: 'Verification' },
   { id: 'photos',     label: 'Photos' },
+  { id: 'reviews',    label: 'Reviews' },
 ]
 
 export default function AdminPanel() {
@@ -1039,6 +1137,7 @@ export default function AdminPanel() {
                 {tab === 'featured'  && <FeaturedTab  directors={directors} pw={pw} onUpdate={handleUpdate} />}
                 {tab === 'review'    && listings && <ReviewTab listings={listings} pw={pw} onRefresh={refresh} />}
                 {tab === 'photos'    && listings && <PhotosTab listings={listings} pw={pw} onRefresh={refresh} />}
+                {tab === 'reviews'   && <ReviewsTab pw={pw} />}
               </>
             )}
           </div>

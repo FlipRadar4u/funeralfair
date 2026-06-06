@@ -108,6 +108,186 @@ const INFO_ICON = (
   </svg>
 )
 
+const CLOCK_ICON = (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+  </svg>
+)
+
+// ── Star picker (write-review form) ──────────────────────────────────────────
+
+function StarPicker({ value, onChange }) {
+  const [hover, setHover] = useState(0)
+  const STAR_PATH = 'M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z'
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i)}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(0)}
+          className="p-0.5 focus:outline-none"
+          aria-label={`${i} star${i > 1 ? 's' : ''}`}
+        >
+          <svg className={`w-7 h-7 transition-colors ${i <= (hover || value) ? 'text-amber-400' : 'text-warm-border'}`} viewBox="0 0 20 20" fill="currentColor">
+            <path d={STAR_PATH} />
+          </svg>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function ReviewStars({ rating }) {
+  const STAR_PATH = 'M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z'
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <svg key={i} className={`w-4 h-4 ${i <= rating ? 'text-amber-400' : 'text-warm-border'}`} viewBox="0 0 20 20" fill="currentColor">
+          <path d={STAR_PATH} />
+        </svg>
+      ))}
+    </div>
+  )
+}
+
+function WriteReviewForm({ directorId }) {
+  const [form, setForm]         = useState({ name: '', rating: 0, body: '' })
+  const [status, setStatus]     = useState(null)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.rating)                      { setErrorMsg('Please select a star rating.'); return }
+    if (form.body.trim().length < 20)      { setErrorMsg('Review must be at least 20 characters.'); return }
+    setStatus('sending'); setErrorMsg('')
+    try {
+      const res  = await fetch('/api/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directorId, reviewerName: form.name, rating: form.rating, reviewBody: form.body }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setErrorMsg(data.error || 'Something went wrong.'); setStatus(null); return }
+      setStatus('success')
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.')
+      setStatus(null)
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="bg-sage-light border border-sage-border rounded-xl px-5 py-4 text-center mt-4">
+        <p className="font-semibold text-sage mb-1">Thanks for your review!</p>
+        <p className="text-sm text-charcoal">It'll appear here once approved — usually within 24 hours.</p>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-5 mt-4 border-t border-warm-border">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-charcoal">Your name <span className="text-red-400">*</span></label>
+        <input
+          required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          placeholder="e.g. Jane S." autoComplete="name"
+          className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage"
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-charcoal">Your rating <span className="text-red-400">*</span></label>
+        <StarPicker value={form.rating} onChange={r => setForm(f => ({ ...f, rating: r }))} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-charcoal">Your experience <span className="text-red-400">*</span></label>
+        <textarea
+          required rows={4} value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+          placeholder="Share your experience with this funeral director…"
+          className="px-3 py-2.5 rounded-xl border border-warm-border bg-cream text-sm text-charcoal placeholder-muted focus:outline-none focus:ring-2 focus:ring-sage resize-none"
+        />
+        <p className="text-xs text-muted text-right">{form.body.length} / 1000</p>
+      </div>
+      {errorMsg && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{errorMsg}</p>
+      )}
+      <button
+        type="submit" disabled={status === 'sending'}
+        className="w-full py-3 bg-sage hover:bg-sage-dark disabled:opacity-60 text-white font-semibold rounded-xl text-sm transition-colors"
+      >
+        {status === 'sending' ? 'Submitting…' : 'Submit review'}
+      </button>
+      <p className="text-xs text-muted text-center">Reviews are checked before appearing. We never share your details.</p>
+    </form>
+  )
+}
+
+function ReviewsSection({ director }) {
+  const [showForm, setShowForm] = useState(false)
+  const reviews = director.reviews || []
+  return (
+    <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">
+          Reviews{reviews.length > 0 ? ` (${reviews.length})` : ''}
+        </h2>
+        {!showForm && (
+          <button onClick={() => setShowForm(true)} className="text-xs font-semibold text-sage hover:underline">
+            + Write a review
+          </button>
+        )}
+      </div>
+      {reviews.length === 0 && !showForm && (
+        <p className="text-sm text-muted pt-2 pb-1">No reviews yet. Be the first to share your experience.</p>
+      )}
+      {reviews.length > 0 && (
+        <div className="mt-3 divide-y divide-warm-border">
+          {reviews.map(r => (
+            <div key={r.id} className="py-4">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1.5">
+                <ReviewStars rating={r.rating} />
+                <span className="text-sm font-semibold text-charcoal">{r.reviewer_name}</span>
+                <span className="text-xs text-muted">
+                  · {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+              <p className="text-sm text-charcoal leading-relaxed">{r.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {showForm && <WriteReviewForm directorId={director.id} />}
+    </div>
+  )
+}
+
+function FaqAccordion({ faqs }) {
+  const [open, setOpen] = useState(null)
+  if (!faqs?.length) return null
+  return (
+    <div className="flex flex-col divide-y divide-warm-border">
+      {faqs.map((faq, i) => (
+        <div key={i}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            className="w-full flex items-center justify-between gap-3 py-4 text-left"
+          >
+            <span className="text-sm font-semibold text-charcoal">{faq.q}</span>
+            <svg className={`w-4 h-4 text-muted shrink-0 transition-transform ${open === i ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {open === i && (
+            <p className="text-sm text-muted leading-relaxed pb-4">{faq.a}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function PhotoGallery({ photos }) {
   const [active, setActive] = useState(null)
   if (!photos?.length) return null
@@ -255,9 +435,53 @@ export default function DirectorDetail() {
         setLoading(false)
         document.title = `${data.name} — FuneralFair`
         document.querySelector('meta[name="description"]')?.setAttribute('content', `Compare prices for ${data.name} in ${data.town}. Attended funeral and direct cremation prices from their published Standardised Price List.`)
+
+        // JSON-LD structured data
+        const schema = {
+          '@context': 'https://schema.org',
+          '@type': 'FuneralParlor',
+          name: data.name,
+          address: {
+            '@type': 'PostalAddress',
+            ...(data.address   && { streetAddress: data.address }),
+            ...(data.town      && { addressLocality: data.town }),
+            ...(data.postcode  && { postalCode: data.postcode }),
+            addressCountry: 'GB',
+          },
+          ...(data.phone   && { telephone: data.phone }),
+          ...(data.website && { url: data.website }),
+          ...(data.lat != null && data.lng != null && {
+            geo: {
+              '@type': 'GeoCoordinates',
+              latitude:  data.lat,
+              longitude: data.lng,
+            },
+          }),
+          ...(data.google_rating && data.google_reviews > 0 && {
+            aggregateRating: {
+              '@type':       'AggregateRating',
+              ratingValue:   Number(data.google_rating).toFixed(1),
+              reviewCount:   data.google_reviews,
+              bestRating:    '5',
+              worstRating:   '1',
+            },
+          }),
+        }
+
+        let el = document.getElementById('ff-schema')
+        if (!el) {
+          el = document.createElement('script')
+          el.id   = 'ff-schema'
+          el.type = 'application/ld+json'
+          document.head.appendChild(el)
+        }
+        el.textContent = JSON.stringify(schema)
       })
       .catch(err => { setError(`Could not load director (${err})`); setLoading(false) })
   }, [id])
+
+  // Remove schema tag when leaving the page
+  useEffect(() => () => { document.getElementById('ff-schema')?.remove() }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -320,8 +544,27 @@ export default function DirectorDetail() {
               </div>
             </div>
 
+            {/* ── Special offer banner ── */}
+            {director.is_featured && director.special_offer && (
+              <div className="bg-sage-light border border-sage-border rounded-2xl px-5 py-4 flex items-start gap-3">
+                <svg className="w-5 h-5 text-sage shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+                </svg>
+                <p className="text-sm font-semibold text-sage">{director.special_offer}</p>
+              </div>
+            )}
+
             {/* ── Photo gallery (featured only) ── */}
             {director.is_featured && <PhotoGallery photos={director.photos} />}
+
+            {/* ── About ── */}
+            {director.is_featured && director.description && (
+              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+                <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">About</h2>
+                <p className="text-sm text-charcoal leading-relaxed whitespace-pre-wrap">{director.description}</p>
+              </div>
+            )}
 
             {/* ── Contact card ── */}
             <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-2">
@@ -360,10 +603,51 @@ export default function DirectorDetail() {
                 </InfoRow>
               )}
 
-              {!director.address && !director.phone && !director.website && (
+              {director.opening_hours && (
+                <InfoRow icon={CLOCK_ICON}>{director.opening_hours}</InfoRow>
+              )}
+
+              {(director.facebook_url || director.instagram_url) && (
+                <div className="flex items-center gap-3 py-3 border-b border-warm-border last:border-b-0">
+                  {director.facebook_url && (
+                    <a href={director.facebook_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-sage hover:underline font-medium">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      Facebook
+                    </a>
+                  )}
+                  {director.instagram_url && (
+                    <a href={director.instagram_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-sage hover:underline font-medium">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                      </svg>
+                      Instagram
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {!director.address && !director.phone && !director.website && !director.opening_hours && (
                 <p className="text-muted text-sm py-4">No contact details available.</p>
               )}
             </div>
+
+            {/* ── Specialisms ── */}
+            {director.is_featured && director.specialisms?.length > 0 && (
+              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+                <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Services & specialisms</h2>
+                <div className="flex flex-wrap gap-2">
+                  {director.specialisms.map(s => (
+                    <span key={s} className="text-xs font-medium px-3 py-1.5 rounded-full bg-sage-light border border-sage-border text-sage">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ── Price breakdown card ── */}
             <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-2">
@@ -439,6 +723,17 @@ export default function DirectorDetail() {
                 </div>
               )}
             </div>
+
+            {/* ── FAQs ── */}
+            {director.is_featured && director.faqs?.length > 0 && (
+              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+                <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Frequently asked questions</h2>
+                <FaqAccordion faqs={director.faqs} />
+              </div>
+            )}
+
+            {/* ── Reviews ── */}
+            <ReviewsSection director={director} />
 
             {/* ── Visit website CTA (only when form is shown) ── */}
             {director.has_email && director.website && (
