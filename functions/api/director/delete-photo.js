@@ -39,7 +39,7 @@ export async function onRequestPost(context) {
   const field   = inPhotos ? 'photos' : 'pending_photos'
   const newArr  = (director[field] || []).filter(u => u !== url)
 
-  await fetch(
+  const patchRes = await fetch(
     `${SUPABASE_URL}/rest/v1/funeral_directors?id=eq.${director.id}`,
     {
       method: 'PATCH',
@@ -52,6 +52,12 @@ export async function onRequestPost(context) {
       body: JSON.stringify({ [field]: newArr }),
     }
   )
+
+  if (!patchRes.ok) {
+    return new Response(JSON.stringify({ error: 'Failed to remove photo.' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    })
+  }
 
   // Delete from Supabase Storage — extract path from public URL
   const prefix = `${SUPABASE_URL}/storage/v1/object/public/director-photos/`

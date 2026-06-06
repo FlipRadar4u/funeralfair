@@ -430,16 +430,19 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
   async function bulkDelete() {
     if (!window.confirm(`Delete ${selected.size} director${selected.size !== 1 ? 's' : ''}? This cannot be undone.`)) return
     setBulkWorking(true)
-    const ids = [...selected]
-    await Promise.all(ids.map(id =>
-      fetch(`/api/admin/delete-director?pw=${encodeURIComponent(pw)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      }).then(res => { if (res.ok) onDelete(id) })
-    ))
-    setSelected(new Set())
-    setBulkWorking(false)
+    try {
+      const ids = [...selected]
+      await Promise.all(ids.map(id =>
+        fetch(`/api/admin/delete-director?pw=${encodeURIComponent(pw)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        }).then(res => { if (res.ok) onDelete(id) })
+      ))
+      setSelected(new Set())
+    } finally {
+      setBulkWorking(false)
+    }
   }
 
   function bulkExport() {

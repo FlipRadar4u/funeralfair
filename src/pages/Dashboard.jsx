@@ -244,11 +244,12 @@ function PhotoGrid({ photos, pending, token, onPhotosChange, onPendingChange }) 
     if (!window.confirm('Remove this photo? This cannot be undone.')) return
     setDeletingUrl(url)
     try {
-      await fetch('/api/director/delete-photo', {
+      const res = await fetch('/api/director/delete-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, url }),
       })
+      if (!res.ok) { window.alert('Failed to remove photo. Please try again.'); return }
       if (field === 'photos') onPhotosChange((photos || []).filter(u => u !== url))
       else onPendingChange((pending || []).filter(u => u !== url))
     } finally {
