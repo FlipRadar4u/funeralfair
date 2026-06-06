@@ -427,6 +427,42 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
     setBulkWorking(false)
   }
 
+  async function bulkDelete() {
+    if (!window.confirm(`Delete ${selected.size} director${selected.size !== 1 ? 's' : ''}? This cannot be undone.`)) return
+    setBulkWorking(true)
+    const ids = [...selected]
+    await Promise.all(ids.map(id =>
+      fetch(`/api/admin/delete-director?pw=${encodeURIComponent(pw)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }).then(res => { if (res.ok) onDelete(id) })
+    ))
+    setSelected(new Set())
+    setBulkWorking(false)
+  }
+
+  function bulkExport() {
+    const ids     = [...selected]
+    const rows    = directors.filter(d => ids.includes(d.id))
+    const headers = ['Name', 'Town', 'Postcode', 'Email', 'Phone', 'Website', 'Attended price', 'Cremation price', 'NAFD', 'SAIF', 'Featured', 'Claimed']
+    const esc     = s => `"${String(s ?? '').replace(/"/g, '""')}"`
+    const lines   = [
+      headers.join(','),
+      ...rows.map(d => [
+        esc(d.name), esc(d.town), d.postcode || '', d.email || '', d.phone || '', d.website || '',
+        d.attended_price ?? '', d.cremation_price ?? '',
+        d.nafd_member ? 'Yes' : 'No', d.saif_member ? 'Yes' : 'No', d.is_featured ? 'Yes' : 'No',
+        d.claimed_at ? new Date(d.claimed_at).toLocaleDateString('en-GB') : '',
+      ].join(',')),
+    ]
+    const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }))
+    Object.assign(document.createElement('a'), {
+      href: url, download: `funeralfair-${new Date().toISOString().slice(0, 10)}.csv`,
+    }).click()
+    URL.revokeObjectURL(url)
+  }
+
   const filtered = useMemo(() => {
     let list = directors
     if (search) {
@@ -506,10 +542,14 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-3 px-4 py-3 bg-charcoal text-white rounded-xl">
-          <span className="text-sm font-semibold mr-1">{selected.size} selected</span>
+          <span className="text-sm font-semibold mr-2">{selected.size} selected</span>
           {[
-            { label: '★ Feature',    patch: { is_featured: true } },
-            { label: 'Un-feature',   patch: { is_featured: false } },
+            { label: '★ Feature',  patch: { is_featured: true } },
+            { label: 'Un-feature', patch: { is_featured: false } },
+            { label: 'NAFD ✓',     patch: { nafd_member: true } },
+            { label: 'Un-NAFD',    patch: { nafd_member: false } },
+            { label: 'SAIF ✓',     patch: { saif_member: true } },
+            { label: 'Un-SAIF',    patch: { saif_member: false } },
           ].map(({ label, patch }) => (
             <button
               key={label}
@@ -520,6 +560,21 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
               {label}
             </button>
           ))}
+          <div className="w-px h-4 bg-white/20 mx-1" />
+          <button
+            onClick={bulkExport}
+            disabled={bulkWorking}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 transition-colors"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={bulkDelete}
+            disabled={bulkWorking}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500/80 hover:bg-red-500 disabled:opacity-50 transition-colors"
+          >
+            Delete
+          </button>
           <button
             onClick={() => setSelected(new Set())}
             className="ml-auto text-xs text-white/50 hover:text-white transition-colors"
