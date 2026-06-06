@@ -903,6 +903,128 @@ function ClaimsTab({ directors }) {
   )
 }
 
+// ─── Campaign tab ────────────────────────────────────────────────────────────
+
+function fmtCampaignDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function CampaignTab({ directors }) {
+  const [filter, setFilter] = useState('all')
+  const [page,   setPage]   = useState(0)
+  const PER_PAGE = 50
+
+  const withEmail  = directors.filter(d => d.email)
+  const emailed    = directors.filter(d => d.claim_email_sent_at)
+  const claimedAll = directors.filter(d => d.claimed_at)
+  const featured   = directors.filter(d => d.is_featured)
+  const notEmailed = withEmail.filter(d => !d.claim_email_sent_at)
+
+  const now      = Date.now()
+  const thisWeek  = emailed.filter(d => now - new Date(d.claim_email_sent_at) < 7  * 86400000).length
+  const thisMonth = emailed.filter(d => now - new Date(d.claim_email_sent_at) < 30 * 86400000).length
+
+  const sorted   = [...emailed].sort((a, b) => new Date(b.claim_email_sent_at) - new Date(a.claim_email_sent_at))
+  const filtered = filter === 'claimed'   ? sorted.filter(d => d.claimed_at)
+                 : filter === 'unclaimed' ? sorted.filter(d => !d.claimed_at)
+                 : sorted
+  const pages = Math.ceil(filtered.length / PER_PAGE)
+  const shown = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE)
+
+  return (
+    <div className="space-y-6">
+
+      {/* Funnel */}
+      <div>
+        <h3 className="text-sm font-bold text-charcoal mb-3">Outreach funnel</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Have email on file"   value={withEmail.length.toLocaleString()}  sub={pct(withEmail.length, directors.length) + ' of total'} />
+          <StatCard label="Claim email sent"      value={emailed.length.toLocaleString()}    sub={pct(emailed.length, withEmail.length) + ' of emailable'} />
+          <StatCard label="Listing claimed"       value={claimedAll.length.toLocaleString()} sub={emailed.length ? pct(claimedAll.length, emailed.length) + ' of emailed' : '—'} accent />
+          <StatCard label="Upgraded to Featured"  value={featured.length.toLocaleString()}   sub={claimedAll.length ? pct(featured.length, claimedAll.length) + ' of claimed' : '—'} />
+        </div>
+      </div>
+
+      {/* Email activity */}
+      <div>
+        <h3 className="text-sm font-bold text-charcoal mb-3">Email activity</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Sent this week"    value={thisWeek.toLocaleString()} />
+          <StatCard label="Sent last 30 days" value={thisMonth.toLocaleString()} />
+          <StatCard label="Not yet emailed"   value={notEmailed.length.toLocaleString()} sub="have email on file" />
+          <StatCard label="No email on file"  value={(directors.length - withEmail.length).toLocaleString()} sub="unreachable" />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-warm-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-warm-border flex items-center justify-between gap-4">
+          <h3 className="text-sm font-bold text-charcoal shrink-0">
+            Emailed directors <span className="font-normal text-muted">({emailed.length.toLocaleString()})</span>
+          </h3>
+          <div className="flex gap-1">
+            {[['all', 'All'], ['claimed', 'Claimed'], ['unclaimed', 'Not claimed']].map(([id, label]) => (
+              <button key={id} onClick={() => { setFilter(id); setPage(0) }}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${filter === id ? 'bg-sage text-white' : 'text-muted hover:text-charcoal'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-warm-border bg-cream/60 text-left">
+                <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Director</th>
+                <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Emailed</th>
+                <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Claimed</th>
+                <th className="px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Featured</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-warm-border">
+              {shown.map(d => (
+                <tr key={d.id} className="hover:bg-cream/40 transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-charcoal leading-snug">{d.name}</p>
+                    <p className="text-xs text-muted">{d.town}{d.postcode ? `, ${d.postcode}` : ''}</p>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{fmtCampaignDate(d.claim_email_sent_at)}</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap">
+                    {d.claimed_at
+                      ? <span className="font-semibold text-sage">{fmtCampaignDate(d.claimed_at)}</span>
+                      : <span className="text-muted">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {d.is_featured
+                      ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sage text-white">Featured</span>
+                      : <span className="text-xs text-muted">—</span>}
+                  </td>
+                </tr>
+              ))}
+              {shown.length === 0 && (
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted">No directors match this filter.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {pages > 1 && (
+          <div className="px-5 py-3 border-t border-warm-border flex items-center justify-between text-sm text-muted">
+            <span className="text-xs">{filtered.length.toLocaleString()} total</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                className="px-3 py-1 rounded-lg border border-warm-border text-xs font-semibold disabled:opacity-40 hover:border-sage transition-colors">← Prev</button>
+              <span className="text-xs">{page + 1} / {pages}</span>
+              <button onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={page === pages - 1}
+                className="px-3 py-1 rounded-lg border border-warm-border text-xs font-semibold disabled:opacity-40 hover:border-sage transition-colors">Next →</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Reviews tab ─────────────────────────────────────────────────────────────
 
 function ReviewsTab({ pw }) {
@@ -985,6 +1107,7 @@ function ReviewsTab({ pw }) {
 
 const TABS = [
   { id: 'overview',   label: 'Overview' },
+  { id: 'campaign',   label: 'Campaign' },
   { id: 'claims',     label: 'Claims' },
   { id: 'directors',  label: 'Directors' },
   { id: 'featured',   label: 'Featured' },
@@ -1132,6 +1255,7 @@ export default function AdminPanel() {
             ) : (
               <>
                 {tab === 'overview'  && <OverviewTab directors={directors} />}
+                {tab === 'campaign'  && <CampaignTab directors={directors} />}
                 {tab === 'claims'    && <ClaimsTab directors={directors} />}
                 {tab === 'directors' && <DirectorsTab directors={directors} pw={pw} onUpdate={handleUpdate} onDelete={handleDelete} />}
                 {tab === 'featured'  && <FeaturedTab  directors={directors} pw={pw} onUpdate={handleUpdate} />}
