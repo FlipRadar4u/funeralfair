@@ -158,6 +158,85 @@ function PhotoUpload({ token, onUploaded }) {
   )
 }
 
+// ── Enquiry history ───────────────────────────────────────────────────────────
+
+function fmtEnquiryDate(iso) {
+  const d   = new Date(iso)
+  const now = new Date()
+  const sameYear = d.getFullYear() === now.getFullYear()
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) })
+}
+
+function EnquiriesSection({ token }) {
+  const [enquiries, setEnquiries] = useState(null)
+  const [expanded,  setExpanded]  = useState(null)
+
+  useEffect(() => {
+    fetch(`/api/director/enquiries?token=${encodeURIComponent(token)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setEnquiries(Array.isArray(data) ? data : []))
+      .catch(() => setEnquiries([]))
+  }, [token])
+
+  if (enquiries === null) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-6 py-5">
+      <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
+        Enquiries {enquiries.length > 0 && <span className="ml-1 text-charcoal">({enquiries.length})</span>}
+      </p>
+      {enquiries.length === 0 ? (
+        <p className="text-sm text-muted text-center py-4 leading-relaxed">
+          No enquiries yet. When families contact you via FuneralFair, they'll appear here.
+        </p>
+      ) : (
+        <div className="flex flex-col divide-y divide-warm-border -mx-6 px-6">
+          {enquiries.map(e => (
+            <div key={e.id} className="py-3 first:pt-0 last:pb-0">
+              <button
+                onClick={() => setExpanded(expanded === e.id ? null : e.id)}
+                className="w-full text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-charcoal">{e.enquirer_name}</p>
+                    <p className="text-xs text-muted truncate mt-0.5">{e.message}</p>
+                  </div>
+                  <p className="text-xs text-muted whitespace-nowrap shrink-0 pt-0.5">{fmtEnquiryDate(e.created_at)}</p>
+                </div>
+              </button>
+              {expanded === e.id && (
+                <div className="mt-3 bg-cream rounded-xl border border-warm-border px-4 py-3">
+                  <div className="flex flex-col gap-1 mb-3">
+                    <p className="text-xs text-muted">
+                      Email:{' '}
+                      <a href={`mailto:${e.enquirer_email}`} className="text-sage font-semibold hover:underline">
+                        {e.enquirer_email}
+                      </a>
+                    </p>
+                    {e.enquirer_phone && (
+                      <p className="text-xs text-muted">
+                        Phone: <span className="text-charcoal font-semibold">{e.enquirer_phone}</span>
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-sm text-charcoal leading-relaxed whitespace-pre-wrap">{e.message}</p>
+                  <a
+                    href={`mailto:${e.enquirer_email}?subject=Re: Your enquiry via FuneralFair`}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-sage hover:underline"
+                  >Reply by email →</a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Photos ────────────────────────────────────────────────────────────────────
+
 function PhotoGrid({ photos, pending, token, onPhotosChange, onPendingChange }) {
   const [deletingUrl, setDeletingUrl] = useState(null)
 
@@ -443,6 +522,9 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+
+            {/* ── Enquiries ── */}
+            <EnquiriesSection token={token} />
 
             {/* ── Edit listing ── */}
             <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-6 py-5">

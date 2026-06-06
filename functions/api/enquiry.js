@@ -165,6 +165,17 @@ export async function onRequestPost(context) {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ director_id: String(directorId) }),
     }) : Promise.resolve(),
+    directorId ? fetch(`${SUPABASE_URL}/rest/v1/enquiries`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        director_id:    String(directorId),
+        enquirer_name:  rawEnquirerName,
+        enquirer_email: rawEnquirerEmail,
+        enquirer_phone: rawEnquirerPhone || null,
+        message:        rawMessage,
+      }),
+    }) : Promise.resolve(),
   ]))
 
   return new Response(JSON.stringify({ ok: true }), {
