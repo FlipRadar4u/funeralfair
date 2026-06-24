@@ -239,7 +239,43 @@ export default function CityPage() {
     }
     el.textContent = JSON.stringify(schema)
 
-    return () => { document.getElementById('city-faq-schema')?.remove() }
+    // ItemList schema — tells Google this page is a directory of local businesses
+    const itemList = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `Funeral Directors in ${cityData.name}`,
+      url: `https://funeralfair.co.uk/funeral-directors/${city}`,
+      numberOfItems: directors.length,
+      itemListElement: directors.slice(0, 10).map((d, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'FuneralParlor',
+          name: d.name,
+          url: `https://funeralfair.co.uk/director/${d.id}`,
+          address: {
+            '@type': 'PostalAddress',
+            ...(d.town     && { addressLocality: d.town }),
+            ...(d.postcode && { postalCode: d.postcode }),
+            addressCountry: 'GB',
+          },
+          ...(d.phone && { telephone: d.phone }),
+        },
+      })),
+    }
+    let il = document.getElementById('city-itemlist-schema')
+    if (!il) {
+      il = document.createElement('script')
+      il.id   = 'city-itemlist-schema'
+      il.type = 'application/ld+json'
+      document.head.appendChild(il)
+    }
+    il.textContent = JSON.stringify(itemList)
+
+    return () => {
+      document.getElementById('city-faq-schema')?.remove()
+      document.getElementById('city-itemlist-schema')?.remove()
+    }
   }, [loading, directors, cityData])
 
   // BreadcrumbList schema
