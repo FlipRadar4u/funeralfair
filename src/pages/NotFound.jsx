@@ -9,7 +9,6 @@ export default function NotFound() {
     setPageMeta({
       title: 'Page not found — FuneralFair',
       description: 'This page could not be found. Search for funeral directors near you.',
-      path: '/404',
     })
   }, [])
 

@@ -449,9 +449,11 @@ export default function DirectorDetail() {
   const [copied,       setCopied]      = useState(false)
 
   useEffect(() => {
+    let mounted = true
     fetch(`/api/director/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
+        if (!mounted) return
         setDirector(data)
         setLoading(false)
         const dirTitle = data.town
@@ -524,7 +526,8 @@ export default function DirectorDetail() {
         if (!bc) { bc = document.createElement('script'); bc.id = 'ff-breadcrumb-schema'; bc.type = 'application/ld+json'; document.head.appendChild(bc) }
         bc.textContent = JSON.stringify(breadcrumb)
       })
-      .catch(err => { setError(`Could not load director (${err})`); setLoading(false) })
+      .catch(err => { if (mounted) { setError(`Could not load director (${err})`); setLoading(false) } })
+    return () => { mounted = false }
   }, [id])
 
   // Remove schema tags when leaving the page

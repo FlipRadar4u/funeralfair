@@ -14,7 +14,7 @@ export default function BlogPost() {
     if (!post) { navigate('/blog', { replace: true }); return }
     setPageMeta({
       title: `${post.title} | FuneralFair`,
-      description: post.description,
+      description: post.description || '',
       path: `/blog/${slug}`,
     })
     window.scrollTo(0, 0)

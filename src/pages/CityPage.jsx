@@ -185,7 +185,7 @@ export default function CityPage() {
     const avgC = avg(cremationPrices)
 
     const priceHints = [
-      avgA ? `attended funeral avg £${avgA.toLocaleString('en-GB')}` : null,
+      avgA ? `Attended funeral avg £${avgA.toLocaleString('en-GB')}` : null,
       avgC ? `direct cremation avg £${avgC.toLocaleString('en-GB')}` : null,
     ].filter(Boolean)
     const enrichedDesc = priceHints.length

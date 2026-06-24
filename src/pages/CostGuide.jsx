@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { setPageMeta } from '../utils/setPageMeta'
+import { FEATURED_CITIES } from '../data/featuredCities'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -629,20 +630,7 @@ export default function CostGuide() {
         <section>
           <h2 className="text-lg font-bold text-charcoal mb-4">Browse funeral directors by city</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {[
-              ['london',     'London'],
-              ['manchester', 'Manchester'],
-              ['birmingham', 'Birmingham'],
-              ['liverpool',  'Liverpool'],
-              ['leeds',      'Leeds'],
-              ['sheffield',  'Sheffield'],
-              ['bristol',    'Bristol'],
-              ['edinburgh',  'Edinburgh'],
-              ['glasgow',    'Glasgow'],
-              ['cardiff',    'Cardiff'],
-              ['nottingham', 'Nottingham'],
-              ['newcastle',  'Newcastle'],
-            ].map(([slug, name]) => (
+            {FEATURED_CITIES.map(([slug, name]) => (
               <Link
                 key={slug}
                 to={`/funeral-directors/${slug}`}
