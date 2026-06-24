@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -256,8 +257,11 @@ const INFO_ICON = (
 
 export default function CostGuide() {
   useEffect(() => {
-    document.title = 'UK Funeral Costs 2026 — Average Prices Explained | FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'How much does a funeral cost in the UK in 2026? Average prices for direct cremation (£1,695), attended cremation (£4,400), and burial — plus 7 ways to reduce costs.')
+    setPageMeta({
+      title: 'UK Funeral Costs 2026 — Average Prices Explained | FuneralFair',
+      description: 'How much does a funeral cost in the UK in 2026? Average prices for direct cremation (£1,695), attended cremation (£4,400), and burial — plus 7 ways to reduce costs.',
+      path: '/cost-guide',
+    })
 
     const articleEl = document.createElement('script')
     articleEl.id   = 'cost-guide-article-schema'
@@ -615,6 +619,41 @@ export default function CostGuide() {
                 </summary>
                 <p className="text-sm text-muted leading-relaxed mt-3 pt-3 border-t border-warm-border">{a}</p>
               </details>
+            ))}
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── Browse by city ── */}
+        <section>
+          <h2 className="text-lg font-bold text-charcoal mb-4">Browse funeral directors by city</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              ['london',     'London'],
+              ['manchester', 'Manchester'],
+              ['birmingham', 'Birmingham'],
+              ['liverpool',  'Liverpool'],
+              ['leeds',      'Leeds'],
+              ['sheffield',  'Sheffield'],
+              ['bristol',    'Bristol'],
+              ['edinburgh',  'Edinburgh'],
+              ['glasgow',    'Glasgow'],
+              ['cardiff',    'Cardiff'],
+              ['nottingham', 'Nottingham'],
+              ['newcastle',  'Newcastle'],
+            ].map(([slug, name]) => (
+              <Link
+                key={slug}
+                to={`/funeral-directors/${slug}`}
+                className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-warm-border hover:border-sage hover:shadow-sm transition-all text-sm font-medium text-charcoal"
+              >
+                <svg className="w-3.5 h-3.5 text-sage shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z" />
+                </svg>
+                {name}
+              </Link>
             ))}
           </div>
         </section>

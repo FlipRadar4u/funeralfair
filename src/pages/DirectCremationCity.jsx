@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, Navigate } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
@@ -111,8 +112,11 @@ export default function DirectCremationCity() {
 
   useEffect(() => {
     if (!cityData) return
-    document.title = `Direct Cremation in ${cityData.name} — Compare Prices | FuneralFair`
-    document.querySelector('meta[name="description"]')?.setAttribute('content', `Compare direct cremation prices in ${cityData.name}. Affordable, simple, dignified — prices from local funeral directors, no commission.`)
+    setPageMeta({
+      title: `Direct Cremation in ${cityData.name} — Compare Prices | FuneralFair`,
+      description: `Compare direct cremation prices in ${cityData.name}. Affordable, simple, dignified — prices from local funeral directors, no commission.`,
+      path: `/direct-cremation/${city}`,
+    })
 
     let cancelled = false
 

@@ -1,11 +1,16 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 export default function NotFound() {
   useEffect(() => {
-    document.title = 'Page not found — FuneralFair'
+    setPageMeta({
+      title: 'Page not found — FuneralFair',
+      description: 'This page could not be found. Search for funeral directors near you.',
+      path: '/404',
+    })
   }, [])
 
   return (

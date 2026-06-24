@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -19,8 +20,11 @@ function Point({ icon, title, body }) {
 
 export default function About() {
   useEffect(() => {
-    document.title = 'About FuneralFair — Honest UK Funeral Price Comparison'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'How FuneralFair works, why we built it, and how we make money. We help families compare real funeral prices without commission or sales pressure.')
+    setPageMeta({
+      title: 'About FuneralFair — Honest UK Funeral Price Comparison',
+      description: 'How FuneralFair works, why we built it, and how we make money. We help families compare real funeral prices without commission or sales pressure.',
+      path: '/about',
+    })
   }, [])
 
   return (

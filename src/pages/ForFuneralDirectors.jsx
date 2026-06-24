@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -183,8 +184,11 @@ function TierCard({ tier, onSelectFeatured }) {
 
 export default function ForFuneralDirectors() {
   useEffect(() => {
-    document.title = 'For Funeral Directors — List Your Prices | FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'List your funeral directors business on FuneralFair and reach families actively comparing prices. Free standard listing. No commission ever.')
+    setPageMeta({
+      title: 'For Funeral Directors — List Your Prices | FuneralFair',
+      description: 'List your funeral directors business on FuneralFair and reach families actively comparing prices. Free standard listing. No commission ever.',
+      path: '/for-funeral-directors',
+    })
   }, [])
   const [form, setForm] = useState({
     business_name: '',

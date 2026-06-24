@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -14,8 +15,11 @@ function Section({ title, children }) {
 
 export default function PrivacyPolicy() {
   useEffect(() => {
-    document.title = 'Privacy Policy — FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'FuneralFair privacy policy — how we collect, use and protect your personal data.')
+    setPageMeta({
+      title: 'Privacy Policy — FuneralFair',
+      description: 'FuneralFair privacy policy — how we collect, use and protect your personal data.',
+      path: '/privacy',
+    })
   }, [])
 
   return (

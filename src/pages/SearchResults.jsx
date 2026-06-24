@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
@@ -301,14 +302,15 @@ export default function SearchResults() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.title = location
-      ? `Funeral directors near ${location} — FuneralFair`
-      : 'Compare Funeral Directors — FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content',
-      location
+    setPageMeta({
+      title: location
+        ? `Funeral directors near ${location} — FuneralFair`
+        : 'Compare Funeral Directors — FuneralFair',
+      description: location
         ? `Compare funeral directors near ${location}. Real prices for attended funerals and direct cremation — no commission, no account needed.`
-        : 'Compare funeral directors near you with real, published prices. No commission, no account needed.'
-    )
+        : 'Compare funeral directors near you with real, published prices. No commission, no account needed.',
+      path: '/search',
+    })
   }, [location])
 
   useEffect(() => {

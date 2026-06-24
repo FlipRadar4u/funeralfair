@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Navigate, Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
@@ -135,8 +136,11 @@ export default function CityPage() {
 
   useEffect(() => {
     if (!cityData) return
-    document.title = `Funeral Directors in ${cityData.name} | FuneralFair`
-    document.querySelector('meta[name="description"]')?.setAttribute('content', `Find and compare funeral directors in ${cityData.name}. Real prices from local providers — attended funerals and direct cremation. No commission.`)
+    setPageMeta({
+      title: `Funeral Directors in ${cityData.name} | FuneralFair`,
+      description: `Find and compare funeral directors in ${cityData.name}. Real prices from local providers — attended funerals and direct cremation. No commission.`,
+      path: `/funeral-directors/${city}`,
+    })
 
     let cancelled = false
 
@@ -179,6 +183,19 @@ export default function CityPage() {
     const avg = arr => arr.length >= 3 ? Math.round(arr.reduce((s, p) => s + p, 0) / arr.length) : null
     const avgA = avg(attendedPrices)
     const avgC = avg(cremationPrices)
+
+    const priceHints = [
+      avgA ? `attended funeral avg £${avgA.toLocaleString('en-GB')}` : null,
+      avgC ? `direct cremation avg £${avgC.toLocaleString('en-GB')}` : null,
+    ].filter(Boolean)
+    const enrichedDesc = priceHints.length
+      ? `Compare ${directors.length} funeral directors in ${cityData.name}. ${priceHints.join(', ')}. Real prices, no commission.`
+      : `Find and compare ${directors.length} funeral directors in ${cityData.name}. Real prices from local providers. No commission.`
+    setPageMeta({
+      title: `Funeral Directors in ${cityData.name} | FuneralFair`,
+      description: enrichedDesc,
+      path: `/funeral-directors/${city}`,
+    })
 
     const faqs = [
       {

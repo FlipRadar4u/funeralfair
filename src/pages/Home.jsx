@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import GeoSuggestion from '../components/GeoSuggestion'
@@ -125,8 +126,11 @@ export default function Home() {
   const geoCity = useGeoCity()
 
   useEffect(() => {
-    document.title = 'FuneralFair — Compare Funeral Prices Near You'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Compare funeral directors near you with real, published prices. No commission, no account needed — find fair funeral costs in your area.')
+    setPageMeta({
+      title: 'FuneralFair — Compare Funeral Prices Near You',
+      description: 'Compare funeral directors near you with real, published prices. No commission, no account needed — find fair funeral costs in your area.',
+      path: '/',
+    })
   }, [])
 
   useEffect(() => {

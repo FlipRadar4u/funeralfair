@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -453,7 +454,7 @@ export default function DirectorDetail() {
       .then(data => {
         setDirector(data)
         setLoading(false)
-        document.title = data.town
+        const dirTitle = data.town
           ? `${data.name} | Funeral Director in ${data.town} | FuneralFair`
           : `${data.name} | Funeral Director | FuneralFair`
         const priceHints = []
@@ -461,7 +462,11 @@ export default function DirectorDetail() {
         if (data.cremation_price) priceHints.push(`direct cremation from £${Number(data.cremation_price).toLocaleString('en-GB')}`)
         const priceText = priceHints.length ? ` — ${priceHints.join(', ')}` : ''
         const locationText = data.town ? ` in ${data.town}` : ''
-        document.querySelector('meta[name="description"]')?.setAttribute('content', `${data.name}${locationText}${priceText}. Compare prices and contact details on FuneralFair.`)
+        setPageMeta({
+          title: dirTitle,
+          description: `${data.name}${locationText}${priceText}. Compare prices and contact details on FuneralFair.`,
+          path: `/director/${data.id}`,
+        })
 
         // JSON-LD structured data
         const schema = {

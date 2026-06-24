@@ -1,13 +1,17 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { POSTS } from '../data/blogPosts'
 
 export default function Blog() {
   useEffect(() => {
-    document.title = 'Funeral Guides & Advice | FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Honest, practical guides to funeral costs, choosing a funeral director, and what to expect when a loved one dies. No sales, no pressure.')
+    setPageMeta({
+      title: 'Funeral Guides & Advice | FuneralFair',
+      description: 'Honest, practical guides to funeral costs, choosing a funeral director, and what to expect when a loved one dies. No sales, no pressure.',
+      path: '/blog',
+    })
   }, [])
 
   return (

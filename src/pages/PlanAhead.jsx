@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -55,7 +56,11 @@ export default function PlanAhead() {
   const [expanded, setExpanded] = useState({})
 
   useEffect(() => {
-    document.title = 'Plan Ahead — Funeral Planning Guide | FuneralFair'
+    setPageMeta({
+      title: 'Plan Ahead — Funeral Planning Guide | FuneralFair',
+      description: 'Plan your own funeral arrangements in advance — reduce the burden on your family and make sure your wishes are known.',
+      path: '/plan-ahead',
+    })
     try {
       const saved = localStorage.getItem('ff_planahead')
       if (saved) setChecked(JSON.parse(saved))

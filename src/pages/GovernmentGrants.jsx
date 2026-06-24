@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -382,8 +383,11 @@ function ResultNotEligible({ reason, onRestart }) {
 
 export default function GovernmentGrants() {
   useEffect(() => {
-    document.title = 'Funeral Expenses Payment — Government Grant Checker | FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Check if you can claim Funeral Expenses Payment — a government grant of up to £1,900 to help cover funeral costs. Five quick questions, no account needed.')
+    setPageMeta({
+      title: 'Funeral Expenses Payment — Government Grant Checker | FuneralFair',
+      description: 'Check if you can claim Funeral Expenses Payment — a government grant of up to £1,900 to help cover funeral costs. Five quick questions, no account needed.',
+      path: '/government-grants',
+    })
   }, [])
   const [step,    setStep]   = useState(0)
   const [done,    setDone]   = useState(false)
@@ -523,6 +527,41 @@ export default function GovernmentGrants() {
 
         </div>
       </main>
+
+      {/* ── Browse by city ── */}
+      <section className="px-4 sm:px-6 py-12 bg-cream border-t border-warm-border">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-base font-bold text-charcoal mb-4 text-center">Compare prices by city</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              ['london',     'London'],
+              ['manchester', 'Manchester'],
+              ['birmingham', 'Birmingham'],
+              ['liverpool',  'Liverpool'],
+              ['leeds',      'Leeds'],
+              ['sheffield',  'Sheffield'],
+              ['bristol',    'Bristol'],
+              ['edinburgh',  'Edinburgh'],
+              ['glasgow',    'Glasgow'],
+              ['cardiff',    'Cardiff'],
+              ['nottingham', 'Nottingham'],
+              ['newcastle',  'Newcastle'],
+            ].map(([slug, name]) => (
+              <Link
+                key={slug}
+                to={`/funeral-directors/${slug}`}
+                className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-warm-border hover:border-sage hover:shadow-sm transition-all text-sm font-medium text-charcoal"
+              >
+                <svg className="w-3.5 h-3.5 text-sage shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z" />
+                </svg>
+                {name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>

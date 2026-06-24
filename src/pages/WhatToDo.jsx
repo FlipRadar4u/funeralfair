@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -365,8 +366,11 @@ const ALL_ITEMS = SECTIONS.flatMap(s => s.items)
 
 export default function WhatToDo() {
   useEffect(() => {
-    document.title = 'What To Do When Someone Dies — Step-by-Step Guide | FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'A practical step-by-step guide to what to do when someone dies in England or Wales — from the first 24 hours through to registering the death and arranging a funeral.')
+    setPageMeta({
+      title: 'What To Do When Someone Dies — Step-by-Step Guide | FuneralFair',
+      description: 'A practical step-by-step guide to what to do when someone dies in England or Wales — from the first 24 hours through to registering the death and arranging a funeral.',
+      path: '/what-to-do',
+    })
   }, [])
   const [openItems, setOpenItems] = useState(new Set())
   const [doneItems, setDoneItems] = useState(new Set())

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { getPost, POSTS } from '../data/blogPosts'
@@ -11,8 +12,11 @@ export default function BlogPost() {
 
   useEffect(() => {
     if (!post) { navigate('/blog', { replace: true }); return }
-    document.title = `${post.title} | FuneralFair`
-    document.querySelector('meta[name="description"]')?.setAttribute('content', post.description)
+    setPageMeta({
+      title: `${post.title} | FuneralFair`,
+      description: post.description,
+      path: `/blog/${slug}`,
+    })
     window.scrollTo(0, 0)
   }, [slug, post, navigate])
 

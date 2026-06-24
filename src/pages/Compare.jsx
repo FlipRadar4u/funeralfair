@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { setPageMeta } from '../utils/setPageMeta'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
@@ -44,7 +45,11 @@ export default function Compare() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.title = 'Compare Funeral Directors | FuneralFair'
+    setPageMeta({
+      title: 'Compare Funeral Directors | FuneralFair',
+      description: 'Compare funeral directors side by side — prices, ratings, and contact details. Free and impartial.',
+      path: '/compare',
+    })
   }, [])
 
   if (list.length === 0) {
