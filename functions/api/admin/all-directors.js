@@ -3,7 +3,7 @@
 const SUPABASE_URL = 'https://lgqgviyqqubjvuansump.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncWd2aXlxcXVianZ1YW5zdW1wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODc0OTQ2NCwiZXhwIjoyMDk0MzI1NDY0fQ.TKoT1bPae7-dDL6fI2QDpUjc-KSfqGnpniCD93E0it0'
 
-const SELECT = 'id,name,town,postcode,phone,website,address,attended_price,cremation_price,nafd_member,saif_member,is_featured,verified,needs_review,last_updated,email,claimed_at,claim_email_sent_at,google_rating,google_reviews'
+const SELECT = 'id,name,town,postcode,phone,website,address,attended_price,cremation_price,nafd_member,saif_member,is_featured,verified,needs_review,last_updated,email,claimed_at,claim_token,claim_email_sent_at,google_rating,google_reviews,manually_checked'
 const PAGE   = 1000
 
 export async function onRequestGet(context) {

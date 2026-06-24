@@ -13,6 +13,7 @@ const TOC = [
   { id: 'regional',           label: 'How prices vary across the UK' },
   { id: 'save-money',         label: '7 ways to reduce the cost' },
   { id: 'government-help',    label: 'Government help you may not know about' },
+  { id: 'faq',                label: 'Common questions answered' },
 ]
 
 const STATS = [
@@ -109,22 +110,55 @@ const REGIONS = [
   {
     region: 'London and South East',
     note: "The most expensive area in the UK. Burial plots alone can exceed £15,000 in some London boroughs. Expect to pay well above the national average for all services.",
+    citySlug: 'london',
+    cityLabel: 'Compare prices in London',
   },
   {
     region: 'Midlands and East of England',
     note: 'Costs tend to be closer to the national average. There is reasonable competition between funeral directors in urban areas.',
+    citySlug: 'birmingham',
+    cityLabel: 'Compare prices in Birmingham',
   },
   {
     region: 'North of England',
     note: "Generally slightly below the national average. Yorkshire, Lancashire, and the North East often have more affordable options.",
+    citySlug: 'manchester',
+    cityLabel: 'Compare prices in Manchester',
   },
   {
     region: 'Scotland',
     note: 'Funeral costs in Scotland are typically lower than the UK average. The Scottish Government also has a separate Funeral Support Payment scheme.',
+    citySlug: 'glasgow',
+    cityLabel: 'Compare prices in Glasgow',
   },
   {
     region: 'Wales and Northern Ireland',
     note: 'Generally among the more affordable regions. Rural areas may have fewer directors to compare, but costs tend to be lower than England.',
+    citySlug: 'cardiff',
+    cityLabel: 'Compare prices in Cardiff',
+  },
+]
+
+const FAQS = [
+  {
+    q: 'How much does a funeral cost in the UK in 2026?',
+    a: 'The average cost of an attended funeral in the UK is around £4,400. Direct cremation is cheaper, averaging £1,695. Burial typically costs £5,700 or more due to the cost of a plot. Prices vary considerably by region and provider — comparing local quotes is always worthwhile.',
+  },
+  {
+    q: 'What is the cheapest type of funeral?',
+    a: "Direct cremation is the most affordable option, with some providers offering it from under £1,000. The cremation takes place without a ceremony, but you can still hold a separate memorial service whenever and wherever feels right for your family.",
+  },
+  {
+    q: "What does a funeral director's price include?",
+    a: "Most quotes include collection and care of the deceased, a basic coffin, transportation, the funeral director's professional fees, help with paperwork, and the cremation or burial fee. Extras like flowers, catering, headstones, and printed orders of service are usually charged separately.",
+  },
+  {
+    q: 'Can I get government help with funeral costs?',
+    a: "Yes. If you're receiving certain benefits — including Universal Credit, Housing Benefit, or Pension Credit — you may qualify for a Funeral Expenses Payment from the DWP. This is a grant, not a loan, and covers cremation or burial fees plus up to £1,000 for other costs. You can apply up to 6 months after the funeral date.",
+  },
+  {
+    q: 'Do funeral prices vary across the UK?',
+    a: 'Significantly. London and the South East are the most expensive, with burial plots in some boroughs exceeding £15,000. The North of England and Scotland tend to be below the national average. Prices also vary considerably between funeral directors in the same town — comparing quotes before deciding is always worthwhile.',
   },
 ]
 
@@ -224,6 +258,40 @@ export default function CostGuide() {
   useEffect(() => {
     document.title = 'UK Funeral Costs 2026 — Average Prices Explained | FuneralFair'
     document.querySelector('meta[name="description"]')?.setAttribute('content', 'How much does a funeral cost in the UK in 2026? Average prices for direct cremation (£1,695), attended cremation (£4,400), and burial — plus 7 ways to reduce costs.')
+
+    const articleEl = document.createElement('script')
+    articleEl.id   = 'cost-guide-article-schema'
+    articleEl.type = 'application/ld+json'
+    articleEl.text = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type':    'Article',
+      headline:   'How much does a funeral cost in the UK? (2026 guide)',
+      description: 'Average UK funeral costs in 2026: direct cremation £1,695, attended funeral £4,400, burial £5,700+. What\'s included, regional differences, and 7 ways to reduce costs.',
+      datePublished: '2026-01-15',
+      dateModified:  '2026-06-07',
+      url: 'https://funeralfair.co.uk/funeral-costs/uk',
+      publisher: { '@type': 'Organization', name: 'FuneralFair', url: 'https://funeralfair.co.uk' },
+    })
+    document.head.appendChild(articleEl)
+
+    const faqEl  = document.createElement('script')
+    faqEl.id   = 'cost-guide-faq-schema'
+    faqEl.type = 'application/ld+json'
+    faqEl.text = JSON.stringify({
+      '@context':   'https://schema.org',
+      '@type':      'FAQPage',
+      mainEntity: FAQS.map(({ q, a }) => ({
+        '@type': 'Question',
+        name:    q,
+        acceptedAnswer: { '@type': 'Answer', text: a },
+      })),
+    })
+    document.head.appendChild(faqEl)
+
+    return () => {
+      document.getElementById('cost-guide-article-schema')?.remove()
+      document.getElementById('cost-guide-faq-schema')?.remove()
+    }
   }, [])
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -419,12 +487,17 @@ export default function CostGuide() {
           </p>
 
           <div className="flex flex-col gap-3 mb-7">
-            {REGIONS.map(({ region, note }) => (
+            {REGIONS.map(({ region, note, citySlug, cityLabel }) => (
               <div key={region} className="flex items-start gap-4 bg-white rounded-xl border border-warm-border px-5 py-4">
                 <div className="w-2 h-2 rounded-full bg-sage shrink-0 mt-1.5" />
                 <div>
                   <p className="font-semibold text-charcoal text-sm mb-0.5">{region}</p>
                   <p className="text-sm text-muted leading-relaxed">{note}</p>
+                  {citySlug && (
+                    <Link to={`/funeral-directors/${citySlug}`} className="inline-block mt-2 text-xs font-semibold text-sage hover:underline">
+                      {cityLabel} →
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}
@@ -519,6 +592,31 @@ export default function CostGuide() {
             You can apply for Funeral Expenses Payment even if you've already paid for the funeral,
             as long as you apply <strong>within 6 months</strong> of the funeral date.
           </Callout>
+        </section>
+
+        <Divider />
+
+        {/* ── FAQ section ── */}
+        <section>
+          <SectionHeading id="faq" eyebrow="Section 8">
+            Common questions answered
+          </SectionHeading>
+          <p className="text-muted leading-relaxed mb-7">
+            Answers to the questions families most often ask when they start researching funeral costs.
+          </p>
+          <div className="flex flex-col gap-3">
+            {FAQS.map(({ q, a }) => (
+              <details key={q} className="group bg-white rounded-xl border border-warm-border px-6 py-5 cursor-pointer">
+                <summary className="font-semibold text-charcoal text-sm leading-snug list-none flex items-center justify-between gap-3">
+                  {q}
+                  <svg className="w-4 h-4 text-muted shrink-0 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <p className="text-sm text-muted leading-relaxed mt-3 pt-3 border-t border-warm-border">{a}</p>
+              </details>
+            ))}
+          </div>
         </section>
 
         <Divider />

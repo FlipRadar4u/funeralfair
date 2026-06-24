@@ -30,17 +30,37 @@ export async function onRequestPost(context) {
     })
   }
 
-  // Verify token and get director
-  const authRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/funeral_directors?director_token=eq.${encodeURIComponent(token)}&select=id,pending_photos`,
-    {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-    }
+  // Verify token — try claim_token first (new dashboard), fall back to director_token (legacy)
+  let rows = []
+  const claimRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/funeral_directors?claim_token=eq.${encodeURIComponent(token)}&select=id,photos,pending_photos,is_featured`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
   )
-  const rows = await authRes.json()
+  rows = await claimRes.json()
+
+  if (!rows.length) {
+    const legacyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/funeral_directors?director_token=eq.${encodeURIComponent(token)}&select=id,photos,pending_photos,is_featured`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    )
+    rows = await legacyRes.json()
+  }
+
   if (!rows.length) {
     return new Response(JSON.stringify({ error: 'Invalid token' }), {
       status: 401, headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Enforce photo limit
+  const maxPhotos   = rows[0].is_featured ? 10 : 1
+  const totalPhotos = (rows[0].photos?.length || 0) + (rows[0].pending_photos?.length || 0)
+  if (totalPhotos >= maxPhotos) {
+    const msg = rows[0].is_featured
+      ? 'Photo limit reached — Featured listings can upload up to 10 photos.'
+      : 'Free listings include 1 photo. Upgrade to Featured to upload up to 10.'
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 400, headers: { 'Content-Type': 'application/json' },
     })
   }
 

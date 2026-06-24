@@ -79,7 +79,12 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: director.id, ...payload }),
     })
-    if (!res.ok) { setError('Save failed — check console.'); setSaving(false); return }
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null)
+      setError(errData?.message || errData?.error || `Save failed (${res.status})`)
+      setSaving(false)
+      return
+    }
     onSave({ ...director, ...payload })
     onClose()
   }
@@ -143,9 +148,17 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
               )}
             </div>
           ) : (
-            <div style={{ background: '#faf8f6', border: '1px solid #e8e2db', borderRadius: '10px', padding: '12px 16px' }}>
-              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#9c968f', textTransform: 'uppercase', letterSpacing: '1px' }}>Not yet claimed</p>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b6560' }}>This director hasn't claimed their listing yet.</p>
+            <div style={{ background: '#faf8f6', border: '1px solid #e8e2db', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#9c968f', textTransform: 'uppercase', letterSpacing: '1px' }}>Not yet claimed</p>
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#6b6560' }}>This director hasn't claimed their listing yet.</p>
+              </div>
+              {director.claim_token && (
+                <a href={`/claim/${director.claim_token}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: '12px', fontWeight: 600, color: '#7a9e7e', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  View claim page →
+                </a>
+              )}
             </div>
           )}
 
@@ -183,6 +196,11 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
           </div>
 
           {/* Prices */}
+          {director.manually_checked && (
+            <div style={{ background: '#edf3ee', border: '1px solid #c5d9c7', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#7a9e7e', fontWeight: 600 }}>
+              ✓ Prices verified by researcher
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <InlineField label="Attended price (£)" value={form.attended_price} onChange={v => setField('attended_price', v)} type="number" />
             <InlineField label="Cremation price (£)" value={form.cremation_price} onChange={v => setField('cremation_price', v)} type="number" />
@@ -289,8 +307,9 @@ function OverviewTab({ directors }) {
   const nafd           = directors.filter(d => d.nafd_member).length
   const saif           = directors.filter(d => d.saif_member).length
   // verified field deprecated — replaced by claimed_at indicator in edit modal
-  const withEmail      = directors.filter(d => d.email).length
+  const withEmail        = directors.filter(d => d.email).length
   const withGoogleRating = directors.filter(d => d.google_rating != null).length
+  const researcherVerified = directors.filter(d => d.manually_checked).length
   const claimed        = directors.filter(d => d.claimed_at).length
   const emailsSent     = directors.filter(d => d.claim_email_sent_at).length
 
@@ -312,6 +331,8 @@ function OverviewTab({ directors }) {
           <StatCard label="With cremation price" value={withCremation.toLocaleString()} sub={pct(withCremation, total)} />
           <StatCard label="Both prices listed" value={withBoth.toLocaleString()} sub={pct(withBoth, total)} />
           <StatCard label="Missing all prices" value={withNeither.toLocaleString()} sub={`${pct(withNeither, total)} need data`} />
+          <StatCard label="Researcher verified" value={researcherVerified.toLocaleString()} sub={pct(researcherVerified, total) + ' of total'} accent />
+          <StatCard label="Google ratings" value={withGoogleRating.toLocaleString()} sub={withGoogleRating === 0 ? 'Run enrichment script' : pct(withGoogleRating, total)} />
         </div>
       </div>
 
@@ -326,13 +347,56 @@ function OverviewTab({ directors }) {
         </div>
       </div>
 
-      {/* Secondary stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="With email" value={withEmail.toLocaleString()} sub={pct(withEmail, total)} />
-        <StatCard label="Google ratings" value={withGoogleRating.toLocaleString()} sub={withGoogleRating === 0 ? 'Run enrichment script' : pct(withGoogleRating, total)} />
-        <StatCard label="NAFD members" value={nafd.toLocaleString()} sub={pct(nafd, total)} />
-        <StatCard label="SAIF members" value={saif.toLocaleString()} sub={pct(saif, total)} />
-      </div>
+      {/* CMA compliance */}
+      {(() => {
+        const noPricesPct = pct(withNeither, total)
+        return (
+          <div className="bg-white rounded-2xl border border-warm-border p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div>
+                <h3 className="text-sm font-bold text-charcoal">CMA price transparency</h3>
+                <p className="text-xs text-muted mt-0.5">UK funeral directors are legally required to publish a Standard Price List (SPL) online under CMA rules introduced Sept 2021.</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-2xl font-bold text-red-500">{noPricesPct}</p>
+                <p className="text-xs text-muted">publishing no prices</p>
+              </div>
+            </div>
+
+            {/* Incomplete data warning */}
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+              <span className="text-amber-500 text-base mt-0.5 shrink-0">⚠</span>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                <strong>Data incomplete.</strong> These figures include directors not yet checked by the researcher — a missing price may mean it hasn't been scraped yet, not that it doesn't exist. The CMA stats and story angle below will only be reliable once all batches are complete. <strong>{researcherVerified.toLocaleString()} of {total.toLocaleString()} directors with prices confirmed so far ({pct(researcherVerified, total)}).</strong>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-red-500">{withNeither.toLocaleString()}</p>
+                <p className="text-xs text-muted mt-0.5">No prices at all</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-amber-600">{(total - withAttended).toLocaleString()}</p>
+                <p className="text-xs text-muted mt-0.5">Missing attended price</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-amber-600">{(total - withCremation).toLocaleString()}</p>
+                <p className="text-xs text-muted mt-0.5">Missing cremation price</p>
+              </div>
+              <div className="bg-sage/10 border border-sage/20 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-sage">{withBoth.toLocaleString()}</p>
+                <p className="text-xs text-muted mt-0.5">Both prices listed</p>
+              </div>
+            </div>
+            <div className="bg-cream rounded-xl p-3 border border-warm-border opacity-50">
+              <p className="text-xs text-muted leading-relaxed">
+                <strong className="text-charcoal">Story angle (incomplete — revisit when all batches done):</strong> "{noPricesPct} of UK funeral directors are not publishing any prices online — potentially breaking CMA price transparency rules that came into force in September 2021. Of {total.toLocaleString()} directors surveyed, {withNeither.toLocaleString()} showed no Standard Price List on their website."
+              </p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Progress bars */}
       <div className="bg-white rounded-2xl border border-warm-border p-5 shadow-sm">
@@ -371,6 +435,7 @@ const FILTERS = [
   { id: 'claimed',  label: 'Claimed' },
   { id: 'featured', label: 'Featured' },
   { id: 'no-prices', label: 'Missing prices' },
+  { id: 'verified', label: 'Verified prices' },
   { id: 'nafd',     label: 'NAFD' },
   { id: 'saif',     label: 'SAIF' },
   { id: 'no-email', label: 'No email' },
@@ -397,6 +462,27 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
     })
     if (res.ok) onUpdate({ ...d, is_featured: !d.is_featured })
     setToggling(t => ({ ...t, [d.id]: false }))
+  }
+
+  async function toggleVerified(e, d) {
+    e.stopPropagation()
+    setToggling(t => ({ ...t, [`v${d.id}`]: true }))
+    try {
+      const res = await fetch(`/api/admin/update-director?pw=${encodeURIComponent(pw)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: d.id, manually_checked: !d.manually_checked }),
+      })
+      if (res.ok) {
+        onUpdate({ ...d, manually_checked: !d.manually_checked })
+      } else {
+        alert(`Failed to update verified status (${res.status})`)
+      }
+    } catch {
+      alert('Network error — verified status not saved')
+    } finally {
+      setToggling(t => ({ ...t, [`v${d.id}`]: false }))
+    }
   }
 
   function toggleSelect(id) {
@@ -484,6 +570,7 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
     if (filter === 'nafd')      list = list.filter(d => d.nafd_member)
     if (filter === 'saif')      list = list.filter(d => d.saif_member)
     if (filter === 'no-email')  list = list.filter(d => !d.email)
+    if (filter === 'verified')  list = list.filter(d => d.manually_checked)
 
     list = [...list].sort((a, b) => {
       let av = a[sort.col], bv = b[sort.col]
@@ -613,6 +700,7 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted">
                   <SortBtn col="cremation_price" label="Cremation" />
                 </th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-muted">Verified</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-muted">NAFD</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-muted">SAIF</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-muted">Featured</th>
@@ -650,6 +738,20 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
+                    <button
+                      onClick={e => toggleVerified(e, d)}
+                      disabled={toggling[`v${d.id}`]}
+                      title={d.manually_checked ? 'Unmark as verified' : 'Mark as verified'}
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50 ${
+                        d.manually_checked
+                          ? 'bg-sage text-white hover:bg-red-400'
+                          : 'bg-cream border border-warm-border text-muted hover:border-sage hover:text-sage'
+                      }`}
+                    >
+                      {toggling[`v${d.id}`] ? '…' : d.manually_checked ? '✓' : '—'}
+                    </button>
+                  </td>
+                  <td className="px-3 py-3 text-center">
                     <span className={`text-sm ${d.nafd_member ? 'text-sage' : 'text-muted opacity-30'}`}>{d.nafd_member ? '✓' : '—'}</span>
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -680,7 +782,7 @@ function DirectorsTab({ directors, pw, onUpdate, onDelete }) {
                 </tr>
               ))}
               {pageItems.length === 0 && (
-                <tr><td colSpan={9} className="py-12 text-center text-muted text-sm">No results</td></tr>
+                <tr><td colSpan={10} className="py-12 text-center text-muted text-sm">No results</td></tr>
               )}
             </tbody>
           </table>
@@ -1083,6 +1185,146 @@ function CampaignTab({ directors }) {
   )
 }
 
+// ─── Applications tab ────────────────────────────────────────────────────────
+
+function ApplicationsTab({ applications, pw, onRefresh }) {
+  const [loading,  setLoading]  = useState({})
+  const [feedback, setFeedback] = useState({})
+
+  async function approve(a) {
+    setLoading(s => ({ ...s, [a.id]: 'approving' }))
+    setFeedback(s => ({ ...s, [a.id]: null }))
+    try {
+      const res  = await fetch('/api/admin/approve-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pw, id: a.id, website: a.website, business_name: a.business_name, postcode: a.postcode, email: a.email }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setFeedback(s => ({ ...s, [a.id]: { type: 'success', msg: `Approved — dashboard link sent to ${a.email}` } }))
+        setTimeout(onRefresh, 1500)
+      } else if (data.reason === 'no_match') {
+        setFeedback(s => ({ ...s, [a.id]: { type: 'warn', msg: 'No matching listing found in the database. Search for them in the Directors tab and match manually, then deny this application.' } }))
+      } else if (data.reason === 'no_email') {
+        setFeedback(s => ({ ...s, [a.id]: { type: 'warn', msg: 'Listing found but has no email address. Add their email in the Directors tab first, then approve again.' } }))
+      } else {
+        setFeedback(s => ({ ...s, [a.id]: { type: 'error', msg: 'Something went wrong. Try again.' } }))
+      }
+    } catch {
+      setFeedback(s => ({ ...s, [a.id]: { type: 'error', msg: 'Request failed. Try again.' } }))
+    }
+    setLoading(s => ({ ...s, [a.id]: null }))
+  }
+
+  async function deny(id) {
+    setLoading(s => ({ ...s, [id]: 'denying' }))
+    await fetch('/api/admin/dismiss-application', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pw, id }),
+    })
+    setLoading(s => ({ ...s, [id]: null }))
+    onRefresh()
+  }
+
+  if (!applications?.length) {
+    return (
+      <div className="bg-white rounded-2xl border border-warm-border p-8 text-center shadow-sm">
+        <p className="text-charcoal font-semibold mb-2">No new applications</p>
+        <p className="text-sm text-muted">Submissions from the For Funeral Directors page will appear here.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {applications.map(a => (
+        <div key={a.id} className="bg-white rounded-2xl border border-warm-border shadow-sm p-5">
+
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+            <div>
+              <p className="font-semibold text-charcoal text-base">{a.business_name || '—'}</p>
+              <p className="text-sm text-muted mt-0.5">
+                {new Date(a.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => approve(a)}
+                disabled={!!loading[a.id]}
+                className="px-4 py-2 text-sm font-semibold rounded-xl bg-sage hover:bg-sage-dark text-white disabled:opacity-50 transition-colors"
+              >
+                {loading[a.id] === 'approving' ? '…' : 'Approve'}
+              </button>
+              <button
+                onClick={() => deny(a.id)}
+                disabled={!!loading[a.id]}
+                className="px-4 py-2 text-sm font-semibold rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 transition-colors"
+              >
+                {loading[a.id] === 'denying' ? '…' : 'Deny'}
+              </button>
+            </div>
+          </div>
+
+          {/* Feedback */}
+          {feedback[a.id] && (
+            <div className={`mb-4 px-4 py-3 rounded-xl text-sm ${
+              feedback[a.id].type === 'success' ? 'bg-sage-light border border-sage-border text-sage' :
+              feedback[a.id].type === 'warn'    ? 'bg-amber-50 border border-amber-200 text-amber-800' :
+                                                   'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              {feedback[a.id].msg}
+            </div>
+          )}
+
+          {/* Details */}
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+            {a.contact_name    && <Row label="Contact"    value={a.contact_name} />}
+            {a.email           && <Row label="Email"      value={<a href={`mailto:${a.email}`} className="text-sage hover:underline">{a.email}</a>} />}
+            {a.phone           && <Row label="Phone"      value={<a href={`tel:${a.phone}`} className="text-sage hover:underline">{a.phone}</a>} />}
+            {a.postcode        && <Row label="Postcode"   value={a.postcode} />}
+            {a.website         && <Row label="Website"    value={<a href={a.website} target="_blank" rel="noopener noreferrer" className="text-sage hover:underline break-all">{a.website}</a>} />}
+            {a.attended_price  && <Row label="Attended"   value={`£${Number(a.attended_price).toLocaleString('en-GB')}`} />}
+            {a.cremation_price && <Row label="Cremation"  value={`£${Number(a.cremation_price).toLocaleString('en-GB')}`} />}
+          </div>
+
+          {a.packages && (
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Packages</p>
+              <p className="text-sm text-charcoal whitespace-pre-wrap leading-relaxed">{a.packages}</p>
+            </div>
+          )}
+
+          {a.message && (
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Message</p>
+              <p className="text-sm text-charcoal whitespace-pre-wrap leading-relaxed">{a.message}</p>
+            </div>
+          )}
+
+          {a.photo_url && (
+            <div>
+              <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Photo</p>
+              <img src={a.photo_url} alt="Submitted photo" className="w-40 h-28 object-cover rounded-xl border border-warm-border" />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Row({ label, value }) {
+  return (
+    <div className="flex gap-2">
+      <span className="text-muted shrink-0 w-28">{label}</span>
+      <span className="text-charcoal font-medium">{value}</span>
+    </div>
+  )
+}
+
 // ─── Reviews tab ─────────────────────────────────────────────────────────────
 
 function ReviewsTab({ pw }) {
@@ -1164,25 +1406,27 @@ function ReviewsTab({ pw }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'overview',   label: 'Overview' },
-  { id: 'campaign',   label: 'Campaign' },
-  { id: 'claims',     label: 'Claims' },
-  { id: 'directors',  label: 'Directors' },
-  { id: 'featured',   label: 'Featured' },
-  { id: 'review',     label: 'Verification' },
-  { id: 'photos',     label: 'Photos' },
-  { id: 'reviews',    label: 'Reviews' },
+  { id: 'overview',      label: 'Overview' },
+  { id: 'applications',  label: 'Applications' },
+  { id: 'campaign',      label: 'Campaign' },
+  { id: 'claims',        label: 'Claims' },
+  { id: 'directors',     label: 'Directors' },
+  { id: 'featured',      label: 'Featured' },
+  { id: 'review',        label: 'Verification' },
+  { id: 'photos',        label: 'Photos' },
+  { id: 'reviews',       label: 'Reviews' },
 ]
 
 export default function AdminPanel() {
-  const [pw,        setPw]        = useState('')
-  const [input,     setInput]     = useState('')
-  const [directors, setDirectors] = useState(null)
-  const [listings,  setListings]  = useState(null)
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState(null)
-  const [tab,       setTab]       = useState('overview')
-  const [claimsSeen, setClaimsSeen] = useState(false)
+  const [pw,           setPw]           = useState('')
+  const [input,        setInput]        = useState('')
+  const [directors,    setDirectors]    = useState(null)
+  const [listings,     setListings]     = useState(null)
+  const [applications, setApplications] = useState(null)
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState(null)
+  const [tab,          setTab]          = useState('overview')
+  const [claimsSeen,   setClaimsSeen]   = useState(false)
 
   async function login(e) {
     e.preventDefault()
@@ -1192,23 +1436,29 @@ export default function AdminPanel() {
     const lRes = await fetch(`/api/admin/listings?pw=${encodeURIComponent(input)}`)
     if (!lRes.ok) { setError('Incorrect password'); setLoading(false); return }
     const l = await lRes.json()
-    // Load all directors separately — if this column set fails it won't block login
-    const dRes = await fetch(`/api/admin/all-directors?pw=${encodeURIComponent(input)}`)
+    const [dRes, aRes] = await Promise.all([
+      fetch(`/api/admin/all-directors?pw=${encodeURIComponent(input)}`),
+      fetch(`/api/admin/applications?pw=${encodeURIComponent(input)}`),
+    ])
     const d = dRes.ok ? await dRes.json() : []
+    const a = aRes.ok ? await aRes.json() : []
     setPw(input)
     setListings(l)
     setDirectors(d)
+    setApplications(a)
     setLoading(false)
   }
 
   async function refresh() {
-    const [dRes, lRes] = await Promise.all([
+    const [dRes, lRes, aRes] = await Promise.all([
       fetch(`/api/admin/all-directors?pw=${encodeURIComponent(pw)}`),
       fetch(`/api/admin/listings?pw=${encodeURIComponent(pw)}`),
+      fetch(`/api/admin/applications?pw=${encodeURIComponent(pw)}`),
     ])
     if (dRes.ok) setDirectors(await dRes.json())
     else setDirectors([])
     if (lRes.ok) setListings(await lRes.json())
+    if (aRes.ok) setApplications(await aRes.json())
   }
 
   function handleUpdate(updated) {
@@ -1219,9 +1469,10 @@ export default function AdminPanel() {
     setDirectors(prev => prev.filter(d => d.id !== id))
   }
 
-  const reviewCount = listings?.filter(l => l.needs_review).length ?? 0
-  const photoCount  = listings?.filter(l => l.pending_photos?.length).length ?? 0
-  const claimCount  = directors?.filter(d => d.claimed_at).length ?? 0
+  const reviewCount      = listings?.filter(l => l.needs_review).length ?? 0
+  const photoCount       = listings?.filter(l => l.pending_photos?.length).length ?? 0
+  const claimCount       = directors?.filter(d => d.claimed_at).length ?? 0
+  const applicationCount = applications?.length ?? 0
 
   return (
     <div className="min-h-screen bg-cream">
@@ -1282,7 +1533,7 @@ export default function AdminPanel() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
               <div className="flex gap-0 overflow-x-auto">
                 {TABS.map(t => {
-                  const badge = t.id === 'review' ? reviewCount : t.id === 'photos' ? photoCount : t.id === 'claims' ? (claimsSeen ? 0 : claimCount) : 0
+                  const badge = t.id === 'review' ? reviewCount : t.id === 'photos' ? photoCount : t.id === 'claims' ? (claimsSeen ? 0 : claimCount) : t.id === 'applications' ? applicationCount : 0
                   return (
                     <button
                       key={t.id}
@@ -1312,9 +1563,10 @@ export default function AdminPanel() {
               <Spinner />
             ) : (
               <>
-                {tab === 'overview'  && <OverviewTab directors={directors} />}
-                {tab === 'campaign'  && <CampaignTab directors={directors} />}
-                {tab === 'claims'    && <ClaimsTab directors={directors} />}
+                {tab === 'overview'      && <OverviewTab directors={directors} />}
+                {tab === 'applications' && <ApplicationsTab applications={applications} pw={pw} onRefresh={refresh} />}
+                {tab === 'campaign'     && <CampaignTab directors={directors} />}
+                {tab === 'claims'       && <ClaimsTab directors={directors} />}
                 {tab === 'directors' && <DirectorsTab directors={directors} pw={pw} onUpdate={handleUpdate} onDelete={handleDelete} />}
                 {tab === 'featured'  && <FeaturedTab  directors={directors} pw={pw} onUpdate={handleUpdate} />}
                 {tab === 'review'    && listings && <ReviewTab listings={listings} pw={pw} onRefresh={refresh} />}

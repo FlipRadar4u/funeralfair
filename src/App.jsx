@@ -12,7 +12,6 @@ import WhatToDo from './pages/WhatToDo'
 import ForFuneralDirectors from './pages/ForFuneralDirectors'
 import HowWeRank from './pages/HowWeRank'
 import FeaturedConfirmed from './pages/FeaturedConfirmed'
-import DirectorDashboard from './pages/DirectorDashboard'
 import AdminPanel from './pages/AdminPanel'
 import CityPage from './pages/CityPage'
 import DirectCremationCity from './pages/DirectCremationCity'
@@ -21,6 +20,9 @@ import Blog from './pages/Blog'
 import BlogPost from './pages/BlogPost'
 import Compare from './pages/Compare'
 import ClaimListing from './pages/ClaimListing'
+import Dashboard from './pages/Dashboard'
+import DirectorLogin from './pages/DirectorLogin'
+import UpgradeRedirect from './pages/UpgradeRedirect'
 import PlanAhead from './pages/PlanAhead'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import NotFound from './pages/NotFound'
@@ -41,7 +43,6 @@ function AnimatedRoutes() {
         <Route path="/for-funeral-directors" element={<ForFuneralDirectors />} />
         <Route path="/how-we-rank" element={<HowWeRank />} />
         <Route path="/featured-confirmed" element={<FeaturedConfirmed />} />
-        <Route path="/director/dashboard" element={<DirectorDashboard />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/funeral-directors/:city" element={<CityPage />} />
         <Route path="/direct-cremation/:city" element={<DirectCremationCity />} />
@@ -50,6 +51,9 @@ function AnimatedRoutes() {
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/compare" element={<Compare />} />
         <Route path="/claim/:token" element={<ClaimListing />} />
+        <Route path="/dashboard/:token" element={<Dashboard />} />
+        <Route path="/director-login" element={<DirectorLogin />} />
+        <Route path="/upgrade/:token" element={<UpgradeRedirect />} />
         <Route path="/plan-ahead" element={<PlanAhead />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="*" element={<NotFound />} />

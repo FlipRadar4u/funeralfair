@@ -390,12 +390,12 @@ export default function Dashboard() {
       const body = {
         attended_price:  attended  ? parseInt(attended,  10) : null,
         cremation_price: cremation ? parseInt(cremation, 10) : null,
-        phone:   phone.trim()   || null,
-        website: website.trim() || null,
-        address: address.trim() || null,
+        phone:       phone.trim()       || null,
+        website:     website.trim()     || null,
+        address:     address.trim()     || null,
+        description: description.trim() || null,
       }
       if (director.is_featured) {
-        body.description   = description.trim()   || null
         body.opening_hours = openingHours.trim()  || null
         body.facebook_url  = facebookUrl.trim()   || null
         body.instagram_url = instagramUrl.trim()  || null
@@ -573,17 +573,27 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Description — featured only */}
-                {director.is_featured && (
-                  <div className="border-t border-warm-border pt-5">
-                    <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">About your business <span className="normal-case font-normal text-muted">(optional)</span></p>
-                    <p className="text-xs text-muted mb-3">Shown on your public listing. Tell families about your history, values and what sets you apart.</p>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} maxLength={1000} rows={4}
-                      placeholder="e.g. We are a family-run funeral directors with over 40 years of experience…"
-                      className="w-full px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-sage resize-none" />
-                    <p className="text-xs text-muted mt-1 text-right">{description.length}/1000</p>
-                  </div>
-                )}
+                {/* Description — all directors, tiered character limit */}
+                {(() => {
+                  const limit = director.is_featured ? 800 : 300
+                  return (
+                    <div className="border-t border-warm-border pt-5">
+                      <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">About your business <span className="normal-case font-normal text-muted">(optional)</span></p>
+                      <p className="text-xs text-muted mb-3">Shown on your public listing. Tell families about your history, values and what sets you apart.</p>
+                      <textarea value={description} onChange={e => setDescription(e.target.value.slice(0, limit))} maxLength={limit} rows={4}
+                        placeholder="e.g. We are a family-run funeral directors with over 40 years of experience…"
+                        className="w-full px-4 py-3 rounded-xl border border-warm-border bg-cream text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-sage resize-none" />
+                      <div className="flex items-center justify-between mt-1">
+                        {!director.is_featured && (
+                          <p className="text-xs text-muted">
+                            <Link to="/for-funeral-directors" className="text-sage font-medium hover:underline">Upgrade to Featured</Link> for 800 characters
+                          </p>
+                        )}
+                        <p className={`text-xs ml-auto ${description.length >= limit ? 'text-amber-500 font-medium' : 'text-muted'}`}>{description.length}/{limit}</p>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Save button */}
                 <div className="flex items-center gap-3 pt-1 border-t border-warm-border">
@@ -751,7 +761,7 @@ export default function Dashboard() {
               {!director.photos?.length && !pending.length && !atLimit && (
                 <p className="text-sm text-muted text-center py-3">No photos yet — upload your first one above.</p>
               )}
-              {!director.is_featured && (
+              {!director.is_featured && atLimit && (
                 <div className="mt-4">
                   <LockedFeature title="Upload up to 10 photos" description="Listings with multiple photos get significantly more enquiries. Show families your chapel of rest, premises and team." onUpgrade={handleUpgrade} />
                 </div>

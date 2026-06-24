@@ -22,7 +22,7 @@ export async function onRequestPost(context) {
   // Only allow safe fields
   const allowed = ['name','town','postcode','website',
                    'attended_price','cremation_price','nafd_member','saif_member',
-                   'is_featured','verified']
+                   'is_featured','verified','manually_checked']
   const patch = { last_updated: new Date().toISOString() }
   for (const k of allowed) {
     if (k in updates) patch[k] = updates[k]
@@ -41,5 +41,12 @@ export async function onRequestPost(context) {
       body: JSON.stringify(patch),
     }
   )
-  return new Response(null, { status: res.ok ? 200 : res.status })
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '')
+    return new Response(errBody || JSON.stringify({ error: 'Update failed' }), {
+      status: res.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  return new Response(null, { status: 200 })
 }

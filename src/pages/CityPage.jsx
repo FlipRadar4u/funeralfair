@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Navigate } from 'react-router-dom'
+import { useParams, useNavigate, Navigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
@@ -49,6 +49,13 @@ function DirectorCard({ director, city }) {
           <p className="text-sm text-muted mt-0.5">{director.town}{director.postcode ? ` · ${director.postcode}` : ''}</p>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
+          {director.photos?.[0] && (
+            <img
+              src={director.photos[0]}
+              alt=""
+              className="w-14 h-14 rounded-xl object-cover border border-warm-border shadow-sm mb-0.5"
+            />
+          )}
           {director.claimed_at && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage text-white">
               <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -121,6 +128,10 @@ export default function CityPage() {
   const [directors, setDirectors] = useState([])
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
+  const [sortBy,      setSortBy]      = useState('distance')
+  const [filterNafd,  setFilterNafd]  = useState(false)
+  const [filterSaif,  setFilterSaif]  = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
     if (!cityData) return
@@ -159,15 +170,122 @@ export default function CityPage() {
     return () => { cancelled = true }
   }, [city, cityData])
 
+  // Inject FAQ schema after data loads
+  useEffect(() => {
+    if (loading || !cityData || directors.length === 0) return
+
+    const attendedPrices  = directors.map(d => d.attended_price).filter(p => p != null && p > 0)
+    const cremationPrices = directors.map(d => d.cremation_price).filter(p => p != null && p > 0)
+    const avg = arr => arr.length >= 3 ? Math.round(arr.reduce((s, p) => s + p, 0) / arr.length) : null
+    const avgA = avg(attendedPrices)
+    const avgC = avg(cremationPrices)
+
+    const faqs = [
+      {
+        q: `How much does a funeral cost in ${cityData.name}?`,
+        a: avgA
+          ? `The average attended funeral in ${cityData.name} costs around £${avgA.toLocaleString('en-GB')}, based on published prices from local funeral directors. Costs vary between providers — comparing is worth it.`
+          : `Funeral costs in ${cityData.name} vary between providers. Use FuneralFair to compare real, published prices from local funeral directors near you.`,
+      },
+      {
+        q: `How much does direct cremation cost in ${cityData.name}?`,
+        a: avgC
+          ? `The average direct cremation in ${cityData.name} costs around £${avgC.toLocaleString('en-GB')}. Direct cremation is the most affordable option — no service at the crematorium, with the ashes returned to the family.`
+          : `Direct cremation is typically the most affordable funeral option in ${cityData.name}. It involves no formal service at the crematorium, with ashes returned to the family.`,
+      },
+      {
+        q: `How many funeral directors are there in ${cityData.name}?`,
+        a: `There are ${directors.length} funeral directors listed near ${cityData.name} on FuneralFair. You can compare their prices side by side to find the right fit.`,
+      },
+      {
+        q: `How do I choose a funeral director in ${cityData.name}?`,
+        a: `Compare prices, check whether they hold NAFD or SAIF membership (both require members to follow strict codes of practice), and read Google reviews. FuneralFair shows real published prices from ${cityData.name} funeral directors so you can make an informed decision without pressure.`,
+      },
+    ]
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map(({ q, a }) => ({
+        '@type': 'Question',
+        name: q,
+        acceptedAnswer: { '@type': 'Answer', text: a },
+      })),
+    }
+
+    let el = document.getElementById('city-faq-schema')
+    if (!el) {
+      el = document.createElement('script')
+      el.id   = 'city-faq-schema'
+      el.type = 'application/ld+json'
+      document.head.appendChild(el)
+    }
+    el.textContent = JSON.stringify(schema)
+
+    return () => { document.getElementById('city-faq-schema')?.remove() }
+  }, [loading, directors, cityData])
+
+  // BreadcrumbList schema
+  useEffect(() => {
+    if (!cityData) return
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://funeralfair.co.uk' },
+        { '@type': 'ListItem', position: 2, name: `Funeral Directors in ${cityData.name}`, item: `https://funeralfair.co.uk/funeral-directors/${city}` },
+      ],
+    }
+    let el = document.getElementById('city-breadcrumb-schema')
+    if (!el) { el = document.createElement('script'); el.id = 'city-breadcrumb-schema'; el.type = 'application/ld+json'; document.head.appendChild(el) }
+    el.textContent = JSON.stringify(schema)
+    return () => { document.getElementById('city-breadcrumb-schema')?.remove() }
+  }, [cityData, city])
+
   if (!cityData) return <Navigate to="/" replace />
 
-  const featured = directors.filter(d => d.is_featured)
-  const others   = directors.filter(d => !d.is_featured)
+  const filtered = directors.filter(d => {
+    if (filterNafd && !d.nafd_member) return false
+    if (filterSaif && !d.saif_member) return false
+    return true
+  })
+
+  const activeFilterCount = [filterNafd, filterSaif].filter(Boolean).length
+  function clearFilters() { setFilterNafd(false); setFilterSaif(false) }
+
+  const sortFn = (a, b) => {
+    const priceField = sortBy === 'attended' ? 'attended_price'
+                     : sortBy === 'cremation' ? 'cremation_price'
+                     : null
+    if (priceField) {
+      const aHas = a[priceField] != null ? 0 : 1
+      const bHas = b[priceField] != null ? 0 : 1
+      if (aHas !== bHas) return aHas - bHas
+    } else {
+      const aHas = (a.attended_price != null || a.cremation_price != null) ? 0 : 1
+      const bHas = (b.attended_price != null || b.cremation_price != null) ? 0 : 1
+      if (aHas !== bHas) return aHas - bHas
+    }
+    if (sortBy === 'attended')  return (a.attended_price  ?? 999999) - (b.attended_price  ?? 999999)
+    if (sortBy === 'cremation') return (a.cremation_price ?? 999999) - (b.cremation_price ?? 999999)
+    return (a._miles ?? 999) - (b._miles ?? 999)
+  }
+
+  const featured = [...filtered.filter(d => d.is_featured)].sort(sortFn)
+  const others   = [...filtered.filter(d => !d.is_featured)].sort(sortFn)
 
   const attendedPrices  = directors.map(d => d.attended_price).filter(p => p != null && p > 0)
   const cremationPrices = directors.map(d => d.cremation_price).filter(p => p != null && p > 0)
   const avgAttended  = attendedPrices.length  >= 3 ? Math.round(attendedPrices.reduce((s, p)  => s + p, 0) / attendedPrices.length)  : null
   const avgCremation = cremationPrices.length >= 3 ? Math.round(cremationPrices.reduce((s, p) => s + p, 0) / cremationPrices.length) : null
+
+  const nearbyCities = cityData
+    ? Object.entries(CITIES)
+        .filter(([slug]) => slug !== city)
+        .map(([slug, data]) => ({ slug, name: data.name, miles: haversineMiles(cityData.lat, cityData.lng, data.lat, data.lng) }))
+        .sort((a, b) => a.miles - b.miles)
+        .slice(0, 6)
+    : []
 
   function handleSearch(e) {
     e.preventDefault()
@@ -179,21 +297,29 @@ export default function CityPage() {
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-5 sm:px-6 py-8 sm:py-14">
-
-        {/* ── Hero ── */}
-        <div className="mb-8 sm:mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-charcoal mb-3">
+      {/* ── City image banner ── */}
+      <div className="relative w-full overflow-hidden bg-charcoal" style={{ height: '200px' }}>
+        <img
+          src="/city-hero.jpg"
+          alt=""
+          aria-hidden="true"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: 'center 40%' }}
+        />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.65))' }} />
+        <div className="absolute inset-0 flex flex-col justify-end pb-5 px-5 sm:px-8" style={{ maxWidth: '80rem', marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white leading-snug">
             Funeral Directors in {cityData.name}
           </h1>
-          {!loading && (
-            <p className="text-muted text-base">
-              {directors.length > 0
-                ? `Compare prices from ${directors.length} funeral director${directors.length !== 1 ? 's' : ''} near ${cityData.name}.`
-                : `No funeral directors found near ${cityData.name}.`}
+          {!loading && directors.length > 0 && (
+            <p className="text-white/75 text-sm mt-1">
+              {directors.length} director{directors.length !== 1 ? 's' : ''} listed · Real published prices, no commission
             </p>
           )}
         </div>
+      </div>
+
+      <main className="flex-1 max-w-5xl mx-auto w-full px-5 sm:px-6 py-8 sm:py-10">
 
         {/* ── City stats ── */}
         {!loading && directors.length > 0 && (
@@ -230,6 +356,62 @@ export default function CityPage() {
           </button>
         </form>
 
+        {/* ── Sort / filter bar ── */}
+        {!loading && directors.length > 0 && (
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setFiltersOpen(o => !o)}
+                style={{ touchAction: 'manipulation' }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${filtersOpen || activeFilterCount > 0 ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3z" />
+                </svg>
+                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </button>
+              <button
+                onClick={() => setSortBy('distance')}
+                style={{ touchAction: 'manipulation' }}
+                className={`shrink-0 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'distance' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+              >Nearest first</button>
+              <button
+                onClick={() => setSortBy('attended')}
+                style={{ touchAction: 'manipulation' }}
+                className={`shrink-0 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'attended' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+              >Attended: lowest price</button>
+              <button
+                onClick={() => setSortBy('cremation')}
+                style={{ touchAction: 'manipulation' }}
+                className={`shrink-0 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${sortBy === 'cremation' ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+              >Cremation: lowest price</button>
+            </div>
+
+            {filtersOpen && (
+              <div className="mt-3 bg-white border border-warm-border rounded-2xl p-5">
+                <p className="text-xs font-semibold text-charcoal mb-2">Membership</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilterNafd(v => !v)}
+                    style={{ touchAction: 'manipulation' }}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${filterNafd ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                  >NAFD member</button>
+                  <button
+                    onClick={() => setFilterSaif(v => !v)}
+                    style={{ touchAction: 'manipulation' }}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${filterSaif ? 'bg-sage text-white border-sage' : 'bg-cream text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
+                  >SAIF member</button>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button onClick={clearFilters} className="mt-4 text-xs text-sage font-medium hover:underline">
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Loading ── */}
         {loading && (
           <div className="flex justify-center py-24">
@@ -243,7 +425,7 @@ export default function CityPage() {
         )}
 
         {/* ── Results ── */}
-        {!loading && !error && directors.length > 0 && (
+        {!loading && !error && (featured.length > 0 || others.length > 0) && (
           <div className="flex flex-col gap-10">
 
             {/* Featured */}
@@ -272,12 +454,95 @@ export default function CityPage() {
           </div>
         )}
 
+        {/* ── No results after filtering ── */}
+        {!loading && !error && directors.length > 0 && filtered.length === 0 && (
+          <div className="flex flex-col items-center text-center py-16 px-4">
+            <p className="text-charcoal font-semibold mb-1">No directors match your filters</p>
+            <p className="text-muted text-sm mb-4">Try removing some filters to see more results.</p>
+            <button onClick={clearFilters} className="px-4 py-2 bg-sage text-white text-sm font-semibold rounded-xl hover:bg-sage-dark transition-colors">
+              Clear all filters
+            </button>
+          </div>
+        )}
+
         {/* ── Empty ── */}
         {!loading && !error && directors.length === 0 && (
-          <div className="text-center py-24">
-            <p className="text-charcoal font-semibold text-lg mb-2">No results found</p>
-            <p className="text-muted text-sm">Try searching by postcode or town name above.</p>
+          <div className="flex flex-col items-center text-center py-20 px-4">
+            <div className="w-16 h-16 rounded-full bg-sage-light flex items-center justify-center mb-5">
+              <svg className="w-7 h-7 text-sage" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z" />
+              </svg>
+            </div>
+            <p className="text-charcoal font-semibold text-lg mb-2">No directors found near {cityData.name}</p>
+            <p className="text-muted text-sm max-w-xs leading-relaxed mb-6">
+              We don't have any listed funeral directors in this area yet. Try searching a nearby postcode or town.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {nearbyCities.slice(0, 4).map(({ slug, name }) => (
+                <Link key={slug} to={`/funeral-directors/${slug}`}
+                  className="px-4 py-2 rounded-xl border border-warm-border bg-white text-sm text-charcoal hover:border-sage hover:text-sage transition-colors">
+                  {name}
+                </Link>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* ── Nearby areas ── */}
+        {nearbyCities.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-sm font-semibold text-muted uppercase tracking-widest mb-4">Also search nearby</h2>
+            <div className="flex flex-wrap gap-2">
+              {nearbyCities.map(({ slug, name }) => (
+                <Link
+                  key={slug}
+                  to={`/funeral-directors/${slug}`}
+                  className="px-4 py-2 rounded-xl border border-warm-border bg-white text-sm text-charcoal hover:border-sage hover:text-sage transition-colors"
+                >
+                  Funeral directors in {name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── FAQ ── */}
+        {!loading && directors.length > 0 && (
+          <section className="mt-16 border-t border-warm-border pt-10">
+            <h2 className="text-xl font-bold text-charcoal mb-6">
+              Common questions about funerals in {cityData.name}
+            </h2>
+            <div className="flex flex-col divide-y divide-warm-border">
+              {[
+                {
+                  q: `How much does a funeral cost in ${cityData.name}?`,
+                  a: avgAttended
+                    ? `The average attended funeral in ${cityData.name} costs around £${avgAttended.toLocaleString('en-GB')}, based on published prices from local funeral directors. Costs vary between providers — comparing is worth it.`
+                    : `Funeral costs in ${cityData.name} vary between providers. Use FuneralFair to compare real, published prices from local funeral directors near you.`,
+                },
+                {
+                  q: `How much does direct cremation cost in ${cityData.name}?`,
+                  a: avgCremation
+                    ? `The average direct cremation in ${cityData.name} costs around £${avgCremation.toLocaleString('en-GB')}. Direct cremation is the most affordable option — no service at the crematorium, with the ashes returned to the family.`
+                    : `Direct cremation is typically the most affordable funeral option in ${cityData.name}. It involves no formal service at the crematorium, with ashes returned to the family.`,
+                },
+                {
+                  q: `How many funeral directors are there in ${cityData.name}?`,
+                  a: `There are ${directors.length} funeral director${directors.length !== 1 ? 's' : ''} listed near ${cityData.name} on FuneralFair. You can compare their prices side by side to find the right fit.`,
+                },
+                {
+                  q: `How do I choose a funeral director in ${cityData.name}?`,
+                  a: `Compare prices, check whether they hold NAFD or SAIF membership (both require members to follow strict codes of practice), and read Google reviews. FuneralFair shows real published prices from ${cityData.name} funeral directors so you can make an informed decision without pressure.`,
+                },
+              ].map(({ q, a }) => (
+                <div key={q} className="py-5">
+                  <h3 className="text-sm font-semibold text-charcoal mb-1.5">{q}</h3>
+                  <p className="text-sm text-muted leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
       </main>

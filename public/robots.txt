@@ -4,36 +4,28 @@
 # ── Search engines (welcome) ──────────────────────────────────────────────────
 User-agent: Googlebot
 Allow: /
-Crawl-delay: 2
 
 User-agent: Bingbot
 Allow: /
-Crawl-delay: 2
 
 # ── AI assistants (welcome) ───────────────────────────────────────────────────
 User-agent: GPTBot
 Allow: /
-Crawl-delay: 5
 
 User-agent: ClaudeBot
 Allow: /
-Crawl-delay: 5
 
 User-agent: PerplexityBot
 Allow: /
-Crawl-delay: 5
 
 User-agent: Google-Extended
 Allow: /
-Crawl-delay: 5
 
 User-agent: cohere-ai
 Allow: /
-Crawl-delay: 5
 
 User-agent: anthropic-ai
 Allow: /
-Crawl-delay: 5
 
 # ── SEO scrapers (blocked) ────────────────────────────────────────────────────
 User-agent: SemrushBot
@@ -57,15 +49,11 @@ Disallow: /
 User-agent: PetalBot
 Disallow: /
 
-# ── API endpoints (no crawling) ───────────────────────────────────────────────
-User-agent: *
-Disallow: /api/
-Disallow: /admin
-Disallow: /director/dashboard
-
-# ── General (welcome, be polite) ──────────────────────────────────────────────
+# ── All others: allow public pages, block private routes ──────────────────────
 User-agent: *
 Allow: /
-Crawl-delay: 10
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard/
 
 Sitemap: https://funeralfair.co.uk/sitemap.xml

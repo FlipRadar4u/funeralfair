@@ -4,10 +4,13 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCompare } from '../context/CompareContext'
 import { CITIES } from '../data/cities'
+import GeoSuggestion from '../components/GeoSuggestion'
+import { useGeoSuggestion } from '../hooks/useGeoSuggestion'
+import { useGeoCity } from '../hooks/useGeoCity'
 
 const DirectorsMap = lazy(() => import('../components/DirectorsMap'))
 
-const RADIUS_MILES = 30
+const RADIUS_MILES = 20
 
 function fetchWithTimeout(url, options = {}, ms = 8000) {
   const controller = new AbortController()
@@ -156,7 +159,14 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
             </div>
           )}
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col items-end gap-2">
+          {director.photos?.[0] && (
+            <img
+              src={director.photos[0]}
+              alt=""
+              className="w-14 h-14 rounded-xl object-cover border border-warm-border shadow-sm"
+            />
+          )}
           {director.claimed_at && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage text-white">
               <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -214,6 +224,24 @@ function DirectorCard({ director, backUrl, inFeaturedSection = false }) {
   )
 }
 
+function DirectorCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-warm-border p-6 shadow-sm animate-pulse">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <div className="h-5 w-44 bg-warm-border rounded-md mb-2" />
+          <div className="h-4 w-28 bg-warm-border rounded-md" />
+        </div>
+        <div className="w-14 h-14 bg-warm-border rounded-xl shrink-0" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 mt-5">
+        <div className="h-16 bg-warm-border rounded-xl" />
+        <div className="h-16 bg-warm-border rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
 function Spinner({ label }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-24">
@@ -253,6 +281,9 @@ export default function SearchResults() {
   const location = searchParams.get('location') || ''
 
   const [inputValue,    setInputValue]   = useState(location)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const geoSuggestion = useGeoSuggestion()
+  const geoCity = useGeoCity()
   const [results,       setResults]      = useState([])
   const [loading,       setLoading]      = useState(false)
   const [loadingLabel,  setLoadingLabel] = useState('Searching…')
@@ -266,7 +297,6 @@ export default function SearchResults() {
   const [filterNafd,       setFilterNafd]       = useState(false)
   const [filterSaif,       setFilterSaif]       = useState(false)
   const [filtersOpen,      setFiltersOpen]      = useState(false)
-  const [showMap,          setShowMap]          = useState(false)
   const [userCoords,       setUserCoords]       = useState(null)
   const navigate = useNavigate()
 
@@ -305,7 +335,6 @@ export default function SearchResults() {
       setMaxCremationPrice(null)
       setFilterNafd(false)
       setFilterSaif(false)
-      setShowMap(false)
       setUserCoords(null)
       setLoadingLabel('Looking up location…')
 
@@ -401,13 +430,36 @@ export default function SearchResults() {
 
         {/* ── Search bar ── */}
         <form onSubmit={handleSearch} className="flex gap-2 sm:gap-3 mb-8">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            placeholder="Postcode or town…"
-            className="flex-1 px-4 py-3.5 rounded-xl border border-warm-border bg-white text-charcoal placeholder-muted text-base focus:outline-none focus:ring-2 focus:ring-sage shadow-sm"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+              placeholder="Postcode or town…"
+              className={`w-full px-4 py-3.5 rounded-xl border border-warm-border bg-white text-charcoal placeholder-muted text-base focus:outline-none focus:ring-2 focus:ring-sage shadow-sm ${geoCity ? 'pr-10' : ''}`}
+            />
+            {geoCity && (
+              <button
+                type="button"
+                title={`Use my location (${geoCity})`}
+                onClick={() => { setInputValue(geoCity); navigate(`/search?location=${encodeURIComponent(geoCity)}`) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-sage transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z" />
+                </svg>
+              </button>
+            )}
+            {searchFocused && !inputValue && (
+              <GeoSuggestion
+                suggestion={geoSuggestion}
+                onSelect={city => { setInputValue(city); navigate(`/search?location=${encodeURIComponent(city)}`) }}
+              />
+            )}
+          </div>
           <button
             type="submit"
             className="px-5 sm:px-7 py-3.5 bg-sage hover:bg-sage-dark active:bg-sage-dark text-white font-semibold rounded-xl shadow-sm text-sm sm:text-base whitespace-nowrap"
@@ -421,7 +473,7 @@ export default function SearchResults() {
           <div className="mb-5">
             <h1 className="text-xl sm:text-3xl font-bold text-charcoal leading-snug">
               {isProximity
-                ? <>Funeral directors within {RADIUS_MILES} miles of <span className="text-sage">{location.toUpperCase()}</span></>
+                ? <>Funeral directors within {RADIUS_MILES} miles of <span className="text-sage">{location}</span></>
                 : <>Funeral directors near <span className="text-sage">{location}</span></>}
             </h1>
             {!fetchError && resultCount > 0 && (
@@ -436,6 +488,27 @@ export default function SearchResults() {
             )}
           </div>
         )}
+
+        {/* ── Area average callout ── */}
+        {!loading && !fetchError && resultCount > 0 && (() => {
+          const ap = results.map(d => d.attended_price).filter(p => p != null && p > 0)
+          const cp = results.map(d => d.cremation_price).filter(p => p != null && p > 0)
+          const avgA = ap.length >= 3 ? Math.round(ap.reduce((s, p) => s + p, 0) / ap.length) : null
+          const avgC = cp.length >= 3 ? Math.round(cp.reduce((s, p) => s + p, 0) / cp.length) : null
+          if (!avgA && !avgC) return null
+          return (
+            <div className="flex items-center gap-3 bg-sage-light border border-sage-border rounded-xl px-4 py-3 mb-5 flex-wrap">
+              <svg className="w-4 h-4 text-sage shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+              </svg>
+              <span className="text-xs font-semibold text-sage">In this area:</span>
+              <div className="flex gap-4 flex-wrap text-xs text-muted">
+                {avgA && <span>Avg. attended funeral <strong className="text-charcoal">£{avgA.toLocaleString('en-GB')}</strong></span>}
+                {avgC && <span>Avg. direct cremation <strong className="text-charcoal">£{avgC.toLocaleString('en-GB')}</strong></span>}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── No commission notice ── */}
         {!loading && !fetchError && resultCount > 0 && (
@@ -461,18 +534,6 @@ export default function SearchResults() {
                     style={{ touchAction: 'manipulation' }}
                   >
                     Clear
-                  </button>
-                )}
-                {isProximity && (
-                  <button
-                    onClick={() => setShowMap(m => !m)}
-                    style={{ touchAction: 'manipulation' }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${showMap ? 'bg-sage text-white border-sage' : 'bg-white text-muted border-warm-border hover:border-sage hover:text-charcoal'}`}
-                  >
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                    </svg>
-                    {showMap ? 'Hide map' : 'Map'}
                   </button>
                 )}
                 <button
@@ -516,7 +577,7 @@ export default function SearchResults() {
                   <div>
                     <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Distance</p>
                     <div className="flex gap-2 flex-wrap">
-                      {[5, 10, 20, RADIUS_MILES].map(d => (
+                      {[5, 10, 15, RADIUS_MILES].map(d => (
                         <button
                           key={d}
                           onClick={() => setMaxDistance(d)}
@@ -579,8 +640,13 @@ export default function SearchResults() {
           </div>
         )}
 
-        {/* ── States ── */}
-        {loading && <Spinner label={loadingLabel} />}
+        {/* ── Loading skeletons ── */}
+        {loading && location && (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 5 }).map((_, i) => <DirectorCardSkeleton key={i} />)}
+          </div>
+        )}
+        {loading && !location && <Spinner label={loadingLabel} />}
 
         {!loading && fetchError && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-red-700 text-sm">
@@ -656,7 +722,7 @@ export default function SearchResults() {
         )}
 
         {/* ── Map ── */}
-        {showMap && !loading && filteredResults.length > 0 && (
+        {!loading && filteredResults.length > 0 && (
           <div className="mb-6 rounded-2xl overflow-hidden border border-warm-border shadow-sm" style={{ height: '380px' }}>
             <Suspense fallback={
               <div className="h-full bg-cream flex items-center justify-center">
@@ -664,6 +730,7 @@ export default function SearchResults() {
               </div>
             }>
               <DirectorsMap
+                key={location}
                 directors={filteredResults}
                 userCoords={userCoords}
                 radiusMiles={maxDistance}
@@ -690,6 +757,22 @@ export default function SearchResults() {
         {/* ── Results ── */}
         {!loading && !fetchError && filteredResults.length > 0 && (() => {
           const sortFn = (a, b) => {
+            // Tier: directors with the relevant price always rank above those without it.
+            // Match the tier to whichever price column is being sorted — a director with only
+            // a cremation price should not float above others when sorting by attended price.
+            const priceField = sortBy === 'attended' ? 'attended_price'
+                             : sortBy === 'cremation' ? 'cremation_price'
+                             : null
+            if (priceField) {
+              const aHas = a[priceField] != null ? 0 : 1
+              const bHas = b[priceField] != null ? 0 : 1
+              if (aHas !== bHas) return aHas - bHas
+            } else {
+              // Distance sort: any price is better than none
+              const aHas = (a.attended_price != null || a.cremation_price != null) ? 0 : 1
+              const bHas = (b.attended_price != null || b.cremation_price != null) ? 0 : 1
+              if (aHas !== bHas) return aHas - bHas
+            }
             if (sortBy === 'attended')  return (a.attended_price  ?? 999999) - (b.attended_price  ?? 999999)
             if (sortBy === 'cremation') return (a.cremation_price ?? 999999) - (b.cremation_price ?? 999999)
             return (a._miles ?? 999) - (b._miles ?? 999)

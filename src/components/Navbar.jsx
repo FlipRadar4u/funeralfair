@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 
 export default function Navbar() {
@@ -9,9 +10,8 @@ export default function Navbar() {
     { label: 'Compare Prices',    path: '/search' },
     { label: 'When Someone Dies', path: '/what-to-do-when-someone-dies' },
     { label: 'Cost Guide',        path: '/funeral-costs/uk' },
-    { label: 'Guides',            path: '/blog' },
+    { label: 'Blog',               path: '/blog' },
     { label: 'About',             path: '/about' },
-    { label: 'For Directors',     path: '/for-funeral-directors' },
   ]
 
   function go(path) {
@@ -45,6 +45,14 @@ export default function Navbar() {
                 {label}
               </NavLink>
             ))}
+            <NavLink
+              to="/for-funeral-directors"
+              className={({ isActive }) =>
+                `text-sm font-medium px-3.5 py-1.5 rounded-lg border transition-colors ${isActive ? 'border-sage text-sage bg-sage-light' : 'border-warm-border text-muted hover:border-sage hover:text-sage'}`
+              }
+            >
+              For Directors
+            </NavLink>
           </nav>
 
           {/* Burger */}
@@ -71,8 +79,8 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile menu — fixed below navbar, transform+opacity only (GPU composited) */}
-      <div
+      {/* Mobile menu — portalled to body so page-enter animation doesn't trap fixed positioning */}
+      {createPortal(<div
         className="lg:hidden fixed left-0 right-0 z-[49] bg-cream border-b border-warm-border shadow-lg"
         style={{
           top: '64px',
@@ -96,6 +104,13 @@ export default function Navbar() {
               {label}
             </button>
           ))}
+          <button
+            onClick={() => go('/for-funeral-directors')}
+            className="text-base font-medium text-sage text-left py-4 w-full border-t border-warm-border active:opacity-70 transition-colors duration-100"
+            style={{ touchAction: 'manipulation' }}
+          >
+            For Directors →
+          </button>
           <div className="pt-3 pb-1">
             <button
               onClick={() => go('/search')}
@@ -106,10 +121,10 @@ export default function Navbar() {
             </button>
           </div>
         </nav>
-      </div>
+      </div>, document.body)}
 
       {/* Backdrop */}
-      <div
+      {createPortal(<div
         className="lg:hidden fixed inset-0 z-40"
         style={{
           background: 'rgba(0,0,0,0.18)',
@@ -120,7 +135,7 @@ export default function Navbar() {
         }}
         onClick={() => setMenuOpen(false)}
         aria-hidden="true"
-      />
+      />, document.body)}
     </>
   )
 }

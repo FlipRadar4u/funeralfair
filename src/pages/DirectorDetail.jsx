@@ -445,6 +445,7 @@ export default function DirectorDetail() {
   const [loading,      setLoading]     = useState(true)
   const [error,        setError]       = useState(null)
   const [formVisible,  setFormVisible] = useState(false)
+  const [copied,       setCopied]      = useState(false)
 
   useEffect(() => {
     fetch(`/api/director/${id}`)
@@ -452,8 +453,15 @@ export default function DirectorDetail() {
       .then(data => {
         setDirector(data)
         setLoading(false)
-        document.title = `${data.name} — FuneralFair`
-        document.querySelector('meta[name="description"]')?.setAttribute('content', `Compare prices for ${data.name} in ${data.town}. Attended funeral and direct cremation prices from their published Standardised Price List.`)
+        document.title = data.town
+          ? `${data.name} | Funeral Director in ${data.town} | FuneralFair`
+          : `${data.name} | Funeral Director | FuneralFair`
+        const priceHints = []
+        if (data.attended_price) priceHints.push(`attended funeral from £${Number(data.attended_price).toLocaleString('en-GB')}`)
+        if (data.cremation_price) priceHints.push(`direct cremation from £${Number(data.cremation_price).toLocaleString('en-GB')}`)
+        const priceText = priceHints.length ? ` — ${priceHints.join(', ')}` : ''
+        const locationText = data.town ? ` in ${data.town}` : ''
+        document.querySelector('meta[name="description"]')?.setAttribute('content', `${data.name}${locationText}${priceText}. Compare prices and contact details on FuneralFair.`)
 
         // JSON-LD structured data
         const schema = {
@@ -495,12 +503,44 @@ export default function DirectorDetail() {
           document.head.appendChild(el)
         }
         el.textContent = JSON.stringify(schema)
+
+        // BreadcrumbList schema
+        const breadcrumbItems = [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://funeralfair.co.uk' },
+          ...(data.town ? [{ '@type': 'ListItem', position: 2, name: `Funeral Directors in ${data.town}`, item: `https://funeralfair.co.uk/search?location=${encodeURIComponent(data.town)}` }] : []),
+          { '@type': 'ListItem', position: data.town ? 3 : 2, name: data.name, item: `https://funeralfair.co.uk/director/${data.id}` },
+        ]
+        const breadcrumb = {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: breadcrumbItems,
+        }
+        let bc = document.getElementById('ff-breadcrumb-schema')
+        if (!bc) { bc = document.createElement('script'); bc.id = 'ff-breadcrumb-schema'; bc.type = 'application/ld+json'; document.head.appendChild(bc) }
+        bc.textContent = JSON.stringify(breadcrumb)
       })
       .catch(err => { setError(`Could not load director (${err})`); setLoading(false) })
   }, [id])
 
-  // Remove schema tag when leaving the page
-  useEffect(() => () => { document.getElementById('ff-schema')?.remove() }, [])
+  // Remove schema tags when leaving the page
+  useEffect(() => () => {
+    document.getElementById('ff-schema')?.remove()
+    document.getElementById('ff-breadcrumb-schema')?.remove()
+  }, [])
+
+  // Save to recently viewed
+  useEffect(() => {
+    if (!director) return
+    try {
+      const key = 'ff_recently_viewed'
+      const existing = JSON.parse(localStorage.getItem(key) || '[]')
+      const updated = [
+        { id: director.id, name: director.name, town: director.town },
+        ...existing.filter(d => d.id !== director.id),
+      ].slice(0, 5)
+      localStorage.setItem(key, JSON.stringify(updated))
+    } catch {}
+  }, [director])
 
   // Hide sticky CTA bar when enquiry form scrolls into view
   useEffect(() => {
@@ -544,7 +584,7 @@ export default function DirectorDetail() {
           <div className="flex flex-col gap-5">
 
             {/* ── Header card ── */}
-            <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-7">
+            <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-7">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold text-charcoal leading-tight">
@@ -564,12 +604,44 @@ export default function DirectorDetail() {
                     </div>
                   )}
                 </div>
-                {(director.nafd_member || director.saif_member) && (
-                  <div className="flex gap-2 shrink-0 flex-wrap">
-                    {director.nafd_member && <GreenBadge label="NAFD member" description="National Association of Funeral Directors" />}
-                    {director.saif_member && <GreenBadge label="SAIF member" description="Society of Allied & Independent Funeral Directors" />}
-                  </div>
-                )}
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {(director.nafd_member || director.saif_member) && (
+                    <div className="flex gap-2 flex-wrap justify-end">
+                      {director.nafd_member && <GreenBadge label="NAFD member" description="National Association of Funeral Directors" />}
+                      {director.saif_member && <GreenBadge label="SAIF member" description="Society of Allied & Independent Funeral Directors" />}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: director.name, url: window.location.href }).catch(() => {})
+                      } else {
+                        navigator.clipboard.writeText(window.location.href).then(() => {
+                          setCopied(true)
+                          setTimeout(() => setCopied(false), 2000)
+                        }).catch(() => {})
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-muted hover:text-sage transition-colors"
+                  >
+                    {copied ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 text-sage" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        <span className="text-sage font-medium">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185z" />
+                        </svg>
+                        Share
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -588,15 +660,15 @@ export default function DirectorDetail() {
             {director.is_featured && <PhotoGallery photos={director.photos} />}
 
             {/* ── About ── */}
-            {director.is_featured && director.description && (
-              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+            {director.description && (
+              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-6">
                 <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">About</h2>
                 <p className="text-sm text-charcoal leading-relaxed whitespace-pre-wrap">{director.description}</p>
               </div>
             )}
 
             {/* ── Contact card ── */}
-            <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-2">
+            <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-2">
               <h2 className="text-xs font-semibold text-muted uppercase tracking-widest pt-5 pb-1">
                 Contact
               </h2>
@@ -604,6 +676,19 @@ export default function DirectorDetail() {
               {director.address && (
                 <InfoRow icon={PIN_ICON}>
                   {director.address}{director.town ? `, ${director.town}` : ''}{director.postcode ? ` ${director.postcode}` : ''}
+                  {director.lat != null && director.lng != null && (
+                    <>
+                      <br />
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${director.lat},${director.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sage text-xs font-medium hover:underline"
+                      >
+                        Get directions →
+                      </a>
+                    </>
+                  )}
                 </InfoRow>
               )}
 
@@ -666,7 +751,7 @@ export default function DirectorDetail() {
 
             {/* ── Specialisms ── */}
             {director.is_featured && director.specialisms?.length > 0 && (
-              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-6">
                 <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Services & specialisms</h2>
                 <div className="flex flex-wrap gap-2">
                   {director.specialisms.map(s => (
@@ -679,7 +764,7 @@ export default function DirectorDetail() {
             )}
 
             {/* ── Price breakdown card ── */}
-            <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-2">
+            <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-2">
               <h2 className="text-xs font-semibold text-muted uppercase tracking-widest pt-5 pb-1">
                 Price breakdown
               </h2>
@@ -722,7 +807,7 @@ export default function DirectorDetail() {
               {director.has_email ? (
                 <EnquiryForm director={director} />
               ) : (
-                <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-7 text-center">
+                <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-7 text-center">
                   <div className="w-12 h-12 rounded-full bg-sage-light border border-sage-border flex items-center justify-center mx-auto mb-4">
                     {GLOBE_ICON}
                   </div>
@@ -755,7 +840,7 @@ export default function DirectorDetail() {
 
             {/* ── FAQs ── */}
             {director.is_featured && director.faqs?.length > 0 && (
-              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-7 py-6">
+              <div className="bg-white rounded-2xl border border-warm-border shadow-sm px-5 sm:px-7 py-6">
                 <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Frequently asked questions</h2>
                 <FaqAccordion faqs={director.faqs} />
               </div>

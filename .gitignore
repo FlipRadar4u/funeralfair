@@ -1,6 +1,30 @@
 # Scraper — contains service role keys, keep off GitHub
 scraper/
 
+# Generated working files
+missing-prices.txt
+missing-prices-export.csv
+
+# Researcher batch files and exports — data artefacts, not source
+*.xlsx
+FuneralFair-Batch-*.xlsx
+
+# Design mockups and stock images — not source code
+ChatGPT\ Image*.png
+matthew-smith-*.jpg
+mobile\ how\ it\ works*.png
+
+# Scraper progress/output files — resumable state and intermediate CSVs, not source code
+*-fill-progress.json
+*-progress.json
+*_progress.json
+*_progress*.json
+*_directors.csv
+*_directors_*.csv
+*_patched.csv
+email-preview.html
+yell_debug.html
+
 # Env files
 .env
 .env.*

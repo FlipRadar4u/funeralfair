@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import GeoSuggestion from '../components/GeoSuggestion'
+import { useGeoSuggestion } from '../hooks/useGeoSuggestion'
+import { useGeoCity } from '../hooks/useGeoCity'
 
 const CHECK_ICON = (
   <svg className="w-4 h-4 text-sage shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -115,7 +118,11 @@ function CheckIcon() {
 export default function Home() {
   const [location, setLocation] = useState('')
   const [directorCount, setDirectorCount] = useState(null)
+  const [recentlyViewed, setRecentlyViewed] = useState([])
+  const [heroFocused, setHeroFocused] = useState(false)
   const navigate = useNavigate()
+  const geoSuggestion = useGeoSuggestion()
+  const geoCity = useGeoCity()
 
   useEffect(() => {
     document.title = 'FuneralFair — Compare Funeral Prices Near You'
@@ -127,6 +134,13 @@ export default function Home() {
       .then(r => r.json())
       .then(data => { if (data.count != null) setDirectorCount(data.count) })
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    try {
+      const items = JSON.parse(localStorage.getItem('ff_recently_viewed') || '[]')
+      if (Array.isArray(items)) setRecentlyViewed(items)
+    } catch {}
   }, [])
 
   const trustSignals = [
@@ -159,6 +173,12 @@ export default function Home() {
             className="absolute inset-0 opacity-[0.12]"
             style={{ backgroundImage: 'radial-gradient(circle, #7a9e7e 1px, transparent 1px)', backgroundSize: '28px 28px' }}
           />
+          {/* Hero illustration — right side on large screens */}
+          <img
+            src="/hero-bg.png"
+            alt=""
+            className="hidden lg:block absolute right-0 top-0 h-full w-auto object-contain object-right select-none"
+          />
         </div>
 
         <span className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full bg-sage-light border border-sage-border text-sage text-xs font-semibold tracking-widest uppercase">
@@ -175,13 +195,36 @@ export default function Home() {
 
         {/* Search form */}
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 w-full max-w-lg mb-4">
-          <input
-            type="text"
-            value={location}
-            onChange={e => setLocation(e.target.value)}
-            placeholder="Enter your postcode or town…"
-            className="flex-1 px-4 py-3.5 rounded-xl border border-warm-border bg-white text-charcoal placeholder-muted text-base focus:outline-none focus:ring-2 focus:ring-sage shadow-sm"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              onFocus={() => setHeroFocused(true)}
+              onBlur={() => setTimeout(() => setHeroFocused(false), 150)}
+              placeholder="Enter your postcode or town…"
+              className={`w-full px-4 py-3.5 rounded-xl border border-warm-border bg-white text-charcoal placeholder-muted text-base focus:outline-none focus:ring-2 focus:ring-sage shadow-sm ${geoCity ? 'pr-10' : ''}`}
+            />
+            {geoCity && (
+              <button
+                type="button"
+                title={`Use my location (${geoCity})`}
+                onClick={() => { setLocation(geoCity); navigate(`/search?location=${encodeURIComponent(geoCity)}`) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-sage transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z" />
+                </svg>
+              </button>
+            )}
+            {heroFocused && !location && (
+              <GeoSuggestion
+                suggestion={geoSuggestion}
+                onSelect={city => { setLocation(city); navigate(`/search?location=${encodeURIComponent(city)}`) }}
+              />
+            )}
+          </div>
           <button
             type="submit"
             className="px-7 py-3.5 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl transition-colors duration-150 shadow-sm text-base whitespace-nowrap"
@@ -211,27 +254,62 @@ export default function Home() {
       {/* ── Divider ── */}
       <div className="border-t border-warm-border" />
 
+      {/* ── Recently viewed ── */}
+      {recentlyViewed.length > 0 && (
+        <section className="px-4 sm:px-6 py-8 bg-cream border-b border-warm-border">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Recently viewed</p>
+            <div className="flex flex-wrap gap-2.5">
+              {recentlyViewed.map(d => (
+                <Link
+                  key={d.id}
+                  to={`/director/${d.id}`}
+                  className="inline-flex flex-col bg-white border border-warm-border rounded-xl px-4 py-3 hover:border-sage hover:shadow-sm transition-all text-left"
+                >
+                  <span className="font-semibold text-charcoal text-sm leading-snug">{d.name}</span>
+                  {d.town && <span className="text-xs text-muted mt-0.5">{d.town}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── How it works ── */}
-      <section className="px-4 sm:px-6 py-20 sm:py-24 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold text-charcoal mb-3">How it works</h2>
-            <p className="text-muted text-lg max-w-md mx-auto">
-              Simple and straightforward &mdash; just like it should be.
-            </p>
+      <section className="px-4 sm:px-6 py-14 sm:py-24 bg-white overflow-hidden">
+        <div className="max-w-5xl mx-auto flex flex-row items-center gap-2 sm:gap-6 lg:gap-4">
+
+          {/* Image — left side */}
+          <div className="w-1/2 shrink-0 overflow-visible">
+            <img
+              src="/how-it-works.png"
+              alt=""
+              className="w-full object-contain select-none"
+            />
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-8">
-            {STEPS.map(({ icon, title, desc }) => (
-              <div key={title} className="flex flex-col items-center text-center px-4">
-                <div className="w-14 h-14 rounded-2xl bg-sage-light border border-sage-border flex items-center justify-center mb-5">
-                  {icon}
+          {/* Content — right side */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-3xl lg:text-4xl font-bold text-charcoal mb-1 sm:mb-3">How it works</h2>
+            <p className="text-muted text-xs sm:text-lg mb-5 sm:mb-10 hidden sm:block">
+              Simple and straightforward &mdash; just like it should be.
+            </p>
+
+            <div className="flex flex-col gap-4 sm:gap-8">
+              {STEPS.map(({ icon, title, desc }) => (
+                <div key={title} className="flex items-start gap-2 sm:gap-4">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 shrink-0 rounded-xl sm:rounded-2xl bg-sage-light border border-sage-border flex items-center justify-center">
+                    {icon}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-charcoal text-xs sm:text-lg mb-0.5 sm:mb-1">{title}</h3>
+                    <p className="text-muted text-xs sm:text-sm leading-relaxed hidden sm:block">{desc}</p>
+                  </div>
                 </div>
-                <h3 className="font-semibold text-charcoal text-lg mb-2">{title}</h3>
-                <p className="text-muted text-sm leading-relaxed">{desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
         </div>
       </section>
 

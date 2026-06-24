@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -55,6 +55,56 @@ function TextInput({ label, hint, value, onChange, type = 'text', placeholder })
   )
 }
 
+function PhotoUpload({ token, onUploaded }) {
+  const [dragging,  setDragging]  = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error,     setError]     = useState(null)
+  const inputRef                  = useRef(null)
+
+  async function upload(file) {
+    if (!file) return
+    setError(null); setUploading(true)
+    const fd = new FormData()
+    fd.append('token', token); fd.append('file', file)
+    try {
+      const res  = await fetch('/api/director/upload-photo', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Upload failed'); return }
+      onUploaded(data.url)
+    } catch { setError('Upload failed — please try again') }
+    finally { setUploading(false) }
+  }
+
+  const onDrop = useCallback(e => { e.preventDefault(); setDragging(false); upload(e.dataTransfer.files[0]) }, [token])
+
+  return (
+    <div>
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => !uploading && inputRef.current.click()}
+        className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-8 py-8 cursor-pointer transition-colors ${dragging ? 'border-sage bg-sage-light' : 'border-warm-border hover:border-sage hover:bg-sage-light/40'} ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+      >
+        {uploading
+          ? <><div className="w-7 h-7 rounded-full border-2 border-sage animate-spin" style={{ borderTopColor: 'transparent' }} /><p className="text-sm text-muted">Uploading…</p></>
+          : <>
+              <svg className="w-7 h-7 text-muted" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+              </svg>
+              <div className="text-center">
+                <p className="text-sm font-medium text-charcoal">Drag a photo here, or click to browse</p>
+                <p className="text-xs text-muted mt-0.5">JPEG, PNG or WebP · max 8 MB</p>
+              </div>
+            </>
+        }
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={e => upload(e.target.files[0])} />
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">{error}</p>}
+    </div>
+  )
+}
+
 export default function ClaimListing() {
   const { token } = useParams()
 
@@ -68,6 +118,8 @@ export default function ClaimListing() {
   const [phone,          setPhone]          = useState('')
   const [website,        setWebsite]        = useState('')
   const [address,        setAddress]        = useState('')
+
+  const [uploadedPhoto, setUploadedPhoto] = useState(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -162,23 +214,22 @@ export default function ClaimListing() {
             </div>
             <h1 className="text-2xl font-bold text-charcoal mb-2">Listing updated</h1>
             <p className="text-muted text-sm max-w-xs mx-auto leading-relaxed mb-8">
-              Your changes are live. Families searching in your area will now see your updated details.
+              Your changes are live. You can manage your listing, add photos and more from your dashboard.
             </p>
-            <Link
-              to={`/director/${director.id}`}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl text-sm transition-colors"
-            >
-              View your listing →
-            </Link>
-            <p className="mt-6 text-xs text-muted">
-              Need to make further changes?{' '}
-              <button
-                onClick={() => setSuccess(false)}
-                className="underline underline-offset-2 hover:text-charcoal transition-colors"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to={`/dashboard/${token}`}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl text-sm transition-colors"
               >
-                Update again
-              </button>
-            </p>
+                Go to my dashboard →
+              </Link>
+              <Link
+                to={`/director/${director.id}`}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-warm-border hover:border-sage text-charcoal font-semibold rounded-xl text-sm transition-colors"
+              >
+                View your listing
+              </Link>
+            </div>
           </div>
         )}
 
@@ -191,10 +242,10 @@ export default function ClaimListing() {
                 Free listing
               </span>
               <h1 className="text-2xl sm:text-3xl font-bold text-charcoal leading-tight mb-2">
-                Claim your listing
+                {director.claimed_at ? 'Update your listing' : 'Claim your listing'}
               </h1>
               <p className="text-muted text-sm leading-relaxed">
-                You're claiming <strong className="text-charcoal">{director.name}</strong>
+                You're {director.claimed_at ? 'updating' : 'claiming'} <strong className="text-charcoal">{director.name}</strong>
                 {director.town ? ` in ${director.town}` : ''}.
                 Update your prices and contact details below — changes go live immediately.
               </p>
@@ -241,18 +292,28 @@ export default function ClaimListing() {
               {/* Prices */}
               <div className="bg-white border border-warm-border rounded-2xl p-5 flex flex-col gap-4">
                 <p className="text-xs font-semibold text-muted uppercase tracking-widest">Prices</p>
-                <PriceInput
-                  label="Attended funeral"
-                  hint="Your published price for a full attended funeral with mourners present"
-                  value={attendedPrice}
-                  onChange={setAttendedPrice}
-                />
-                <PriceInput
-                  label="Direct cremation"
-                  hint="Your published price for a direct/unattended cremation"
-                  value={cremationPrice}
-                  onChange={setCremationPrice}
-                />
+                <div>
+                  <PriceInput
+                    label="Attended funeral"
+                    hint="Your published price for a full attended funeral with mourners present"
+                    value={attendedPrice}
+                    onChange={setAttendedPrice}
+                  />
+                  {!attendedPrice && (
+                    <p className="mt-1.5 text-xs text-muted italic">Not currently on your listing — add it above</p>
+                  )}
+                </div>
+                <div>
+                  <PriceInput
+                    label="Direct cremation"
+                    hint="Your published price for a direct/unattended cremation"
+                    value={cremationPrice}
+                    onChange={setCremationPrice}
+                  />
+                  {!cremationPrice && (
+                    <p className="mt-1.5 text-xs text-muted italic">Not currently on your listing — add it above</p>
+                  )}
+                </div>
                 <p className="text-xs text-muted leading-relaxed">
                   Prices must match your published Standardised Price List (SPL). Leave blank if you don't offer that service.
                 </p>
@@ -268,13 +329,18 @@ export default function ClaimListing() {
                   type="tel"
                   placeholder="e.g. 01234 567890"
                 />
-                <TextInput
-                  label="Website"
-                  value={website}
-                  onChange={setWebsite}
-                  type="url"
-                  placeholder="e.g. https://www.yoursite.co.uk"
-                />
+                <div>
+                  <TextInput
+                    label="Website"
+                    value={website}
+                    onChange={setWebsite}
+                    type="url"
+                    placeholder="e.g. https://www.yoursite.co.uk"
+                  />
+                  {!website && (
+                    <p className="mt-1.5 text-xs text-muted italic">Not currently on your listing — add it above</p>
+                  )}
+                </div>
                 <TextInput
                   label="Address"
                   hint="Street address — town and postcode are already on your listing"
@@ -282,6 +348,22 @@ export default function ClaimListing() {
                   onChange={setAddress}
                   placeholder="e.g. 12 High Street"
                 />
+              </div>
+
+              {/* Photo */}
+              <div className="bg-white border border-warm-border rounded-2xl p-5 flex flex-col gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Photo</p>
+                  <p className="text-xs text-muted leading-relaxed">Add a photo of your premises or team. It'll be reviewed before going live.</p>
+                </div>
+                {uploadedPhoto ? (
+                  <div className="relative aspect-video rounded-xl overflow-hidden border border-amber-200">
+                    <img src={uploadedPhoto} alt="" className="w-full h-full object-cover opacity-80" />
+                    <span className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Under review</span>
+                  </div>
+                ) : (
+                  <PhotoUpload token={token} onUploaded={url => setUploadedPhoto(url)} />
+                )}
               </div>
 
               {submitError && (

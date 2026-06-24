@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -44,6 +44,7 @@ const TIERS = [
       'Prices shown from your Standardised Price List',
       'Contact details displayed',
       'Claim & verify your listing',
+      '1 photo',
     ],
     cta: 'Claim your free listing',
     highlight: false,
@@ -56,7 +57,7 @@ const TIERS = [
       'Everything in Free',
       'Pinned to the top of local search results',
       'Featured badge on your card',
-      'Photo gallery',
+      'Up to 10 photos',
       'Direct enquiry form',
       'Priority support',
     ],
@@ -64,6 +65,77 @@ const TIERS = [
     highlight: true,
   },
 ]
+
+function ApplicationPhotoUpload({ onUploaded }) {
+  const [dragging,  setDragging]  = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error,     setError]     = useState(null)
+  const [preview,   setPreview]   = useState(null)
+  const inputRef                  = useRef(null)
+
+  async function upload(file) {
+    if (!file) return
+    setError(null); setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res  = await fetch('/api/upload-application-photo', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Upload failed'); return }
+      setPreview(data.url)
+      onUploaded(data.url)
+    } catch { setError('Upload failed — please try again') }
+    finally { setUploading(false) }
+  }
+
+  const onDrop = useCallback(e => { e.preventDefault(); setDragging(false); upload(e.dataTransfer.files[0]) }, [])
+
+  if (preview) {
+    return (
+      <div className="flex items-center gap-4 p-3 rounded-xl border border-sage bg-sage-light/40">
+        <img src={preview} alt="Preview" className="w-16 h-16 rounded-lg object-cover shrink-0 border border-warm-border" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-charcoal">Photo uploaded</p>
+          <p className="text-xs text-muted mt-0.5">We'll add this to your listing once it's been reviewed.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => { setPreview(null); onUploaded(null) }}
+          className="text-xs text-muted hover:text-red-500 transition-colors shrink-0"
+        >
+          Remove
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => !uploading && inputRef.current.click()}
+        className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-6 cursor-pointer transition-colors ${dragging ? 'border-sage bg-sage-light' : 'border-warm-border hover:border-sage hover:bg-sage-light/40'} ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+      >
+        {uploading
+          ? <><div className="w-6 h-6 rounded-full border-2 border-sage animate-spin" style={{ borderTopColor: 'transparent' }} /><p className="text-sm text-muted">Uploading…</p></>
+          : <>
+              <svg className="w-6 h-6 text-muted" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+              </svg>
+              <div className="text-center">
+                <p className="text-sm font-medium text-charcoal">Drag a photo here, or click to browse</p>
+                <p className="text-xs text-muted mt-0.5">JPEG, PNG or WebP · max 8 MB</p>
+              </div>
+            </>
+        }
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={e => upload(e.target.files[0])} />
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">{error}</p>}
+    </div>
+  )
+}
 
 function TierCard({ tier, onSelectFeatured }) {
   return (
@@ -112,7 +184,7 @@ function TierCard({ tier, onSelectFeatured }) {
 export default function ForFuneralDirectors() {
   useEffect(() => {
     document.title = 'For Funeral Directors — List Your Prices | FuneralFair'
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'List your funeral home on FuneralFair and reach families actively comparing prices. Free standard listing. No commission ever.')
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'List your funeral directors business on FuneralFair and reach families actively comparing prices. Free standard listing. No commission ever.')
   }, [])
   const [form, setForm] = useState({
     business_name: '',
@@ -127,6 +199,7 @@ export default function ForFuneralDirectors() {
     message: '',
   })
   const [status,        setStatus]        = useState(null) // null | 'sending' | 'success' | 'error'
+  const [photoUrl,      setPhotoUrl]      = useState(null)
   const [featuredForm,  setFeaturedForm]  = useState({ name: '', email: '', website: '' })
   const [featuredOpen,  setFeaturedOpen]  = useState(false)
   const [featuredState, setFeaturedState] = useState(null) // null | 'sending' | 'error'
@@ -173,10 +246,11 @@ export default function ForFuneralDirectors() {
       const res = await fetch('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, ...(photoUrl ? { photo_url: photoUrl } : {}) }),
       })
       if (res.ok) {
         setStatus('success')
+        setPhotoUrl(null)
         setForm({ business_name: '', contact_name: '', email: '', phone: '', postcode: '', website: '', attended_price: '', cremation_price: '', packages: '', message: '' })
       } else {
         setStatus('error')
@@ -202,12 +276,21 @@ export default function ForFuneralDirectors() {
           Families in your area are using FuneralFair right now to find a funeral director they can trust.
           Claim your free listing so they find accurate information — and find you.
         </p>
-        <a
-          href="#apply"
-          className="px-8 py-3.5 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl transition-colors duration-150 shadow-sm text-base"
-        >
-          Claim your free listing
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="#apply"
+            className="px-8 py-3.5 bg-sage hover:bg-sage-dark text-white font-semibold rounded-xl transition-colors duration-150 shadow-sm text-base"
+          >
+            Claim your free listing
+          </a>
+          <Link
+            to="/director-login"
+            className="px-8 py-3.5 border-2 border-charcoal/30 text-charcoal hover:border-charcoal font-semibold rounded-xl transition-colors duration-150 text-base"
+            style={{ touchAction: 'manipulation' }}
+          >
+            Manage listing
+          </Link>
+        </div>
       </section>
 
       {/* ── Benefits ── */}
@@ -416,6 +499,15 @@ export default function ForFuneralDirectors() {
                 <p className="text-xs text-muted leading-relaxed">
                   This helps families understand what you offer beyond the standard SPL prices. We'll display relevant details on your listing once reviewed.
                 </p>
+              </div>
+
+              {/* Photo upload */}
+              <div className="border-t border-warm-border pt-5 flex flex-col gap-2">
+                <p className="text-sm font-semibold text-charcoal">Photo <span className="font-normal text-muted">(optional)</span></p>
+                <p className="text-xs text-muted leading-relaxed">
+                  A photo of your premises or team makes your listing much more likely to get attention from families. We'll review it before publishing.
+                </p>
+                <ApplicationPhotoUpload onUploaded={url => setPhotoUrl(url)} />
               </div>
 
               <div className="flex flex-col gap-1.5">

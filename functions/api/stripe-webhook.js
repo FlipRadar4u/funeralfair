@@ -157,7 +157,7 @@ export async function onRequestPost(context) {
     const directorEmail = session.customer_details?.email || session.customer_email
     const name         = session.metadata?.name || ''
     const token        = crypto.randomUUID()
-    const dashboardUrl = `${origin}/director/dashboard?token=${token}`
+    const dashboardUrl = `${origin}/dashboard/${token}`
 
     if (website) {
       if (needsReview) {
@@ -165,8 +165,8 @@ export async function onRequestPost(context) {
           is_featured: false,
           needs_review: true,
           stripe_customer_id: customer,
-          director_token: token,
-          director_email: directorEmail,
+          claim_token: token,
+          email: directorEmail,
         })
         if (directorEmail) {
           await sendEmail(resendKey, {
@@ -185,8 +185,8 @@ export async function onRequestPost(context) {
           is_featured: true,
           needs_review: false,
           stripe_customer_id: customer,
-          director_token: token,
-          director_email: directorEmail,
+          claim_token: token,
+          email: directorEmail,
         })
         if (directorEmail) {
           await sendEmail(resendKey, {

@@ -13,7 +13,11 @@ export const CITIES = {
 
   // ── England — North ───────────────────────────────────────────────────────
   newcastle:        { name: 'Newcastle',        lat: 54.9783, lng: -1.6178, radius: 10 },
+  sunderland:       { name: 'Sunderland',       lat: 54.9069, lng: -1.3838, radius:  8 },
   middlesbrough:    { name: 'Middlesbrough',    lat: 54.5742, lng: -1.2350, radius:  8 },
+  wigan:            { name: 'Wigan',            lat: 53.5450, lng: -2.6325, radius:  8 },
+  stockport:        { name: 'Stockport',        lat: 53.4083, lng: -2.1494, radius:  8 },
+  wirral:           { name: 'Wirral',           lat: 53.3939, lng: -3.0215, radius:  8 },
   bradford:         { name: 'Bradford',         lat: 53.7960, lng: -1.7594, radius:  8 },
   huddersfield:     { name: 'Huddersfield',     lat: 53.6450, lng: -1.7798, radius:  8 },
   hull:             { name: 'Hull',             lat: 53.7676, lng: -0.3274, radius: 10 },
@@ -38,11 +42,13 @@ export const CITIES = {
   luton:            { name: 'Luton',            lat: 51.8787, lng: -0.4200, radius:  8 },
 
   // ── England — South & Southwest ───────────────────────────────────────────
+  reading:          { name: 'Reading',          lat: 51.4543, lng: -0.9781, radius:  8 },
   portsmouth:       { name: 'Portsmouth',       lat: 50.8198, lng: -1.0880, radius:  8 },
   southampton:      { name: 'Southampton',      lat: 50.9097, lng: -1.4044, radius: 10 },
   brighton:         { name: 'Brighton',         lat: 50.8225, lng: -0.1372, radius:  8 },
   oxford:           { name: 'Oxford',           lat: 51.7520, lng: -1.2577, radius:  8 },
   swindon:          { name: 'Swindon',          lat: 51.5558, lng: -1.7797, radius:  8 },
+  gloucester:       { name: 'Gloucester',       lat: 51.8642, lng: -2.2382, radius:  8 },
   bournemouth:      { name: 'Bournemouth',      lat: 50.7192, lng: -1.8808, radius:  8 },
   plymouth:         { name: 'Plymouth',         lat: 50.3755, lng: -4.1427, radius: 10 },
   exeter:           { name: 'Exeter',           lat: 50.7184, lng: -3.5339, radius:  8 },

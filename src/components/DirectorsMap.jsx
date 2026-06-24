@@ -14,6 +14,18 @@ function makePin(fill) {
 const PIN_DEFAULT  = makePin('#7a9e7e')
 const PIN_FEATURED = makePin('#5a7e5e')
 
+const PIN_USER = L.divIcon({
+  className: '',
+  html: `<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.27 21.73 0 14 0z" fill="#2c3e2d" stroke="white" stroke-width="2"/>
+    <circle cx="14" cy="14" r="6" fill="white"/>
+    <circle cx="14" cy="14" r="3.5" fill="#2c3e2d"/>
+  </svg>`,
+  iconSize: [28, 36],
+  iconAnchor: [14, 36],
+  popupAnchor: [0, -38],
+})
+
 function BoundsFitter({ directors }) {
   const map = useMap()
   useEffect(() => {
@@ -31,7 +43,7 @@ function fmt(val) {
   return isNaN(n) ? null : `£${n.toLocaleString('en-GB')}`
 }
 
-export default function DirectorsMap({ directors, onView, userCoords, radiusMiles = 30 }) {
+export default function DirectorsMap({ directors, onView, userCoords, radiusMiles = 20 }) {
   const valid = directors.filter(d => d.lat && d.lng)
   const center = userCoords
     ? [userCoords.lat, userCoords.lng]
@@ -52,11 +64,18 @@ export default function DirectorsMap({ directors, onView, userCoords, radiusMile
       />
       <BoundsFitter directors={valid} />
       {userCoords && (
-        <Circle
-          center={[userCoords.lat, userCoords.lng]}
-          radius={radiusMetres}
-          pathOptions={{ color: '#7a9e7e', fillColor: '#7a9e7e', fillOpacity: 0.06, weight: 1.5, dashArray: '5 5' }}
-        />
+        <>
+          <Circle
+            center={[userCoords.lat, userCoords.lng]}
+            radius={radiusMetres}
+            pathOptions={{ color: '#7a9e7e', fillColor: '#7a9e7e', fillOpacity: 0.06, weight: 1.5, dashArray: '5 5' }}
+          />
+          <Marker position={[userCoords.lat, userCoords.lng]} icon={PIN_USER} zIndexOffset={1000}>
+            <Popup minWidth={130}>
+              <p style={{ fontWeight: 600, fontSize: 13, color: '#2c2c2c', margin: 0 }}>Your search location</p>
+            </Popup>
+          </Marker>
+        </>
       )}
       {valid.map(d => (
         <Marker key={d.id} position={[d.lat, d.lng]} icon={d.is_featured ? PIN_FEATURED : PIN_DEFAULT}>
