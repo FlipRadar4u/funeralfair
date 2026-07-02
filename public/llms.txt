@@ -1,0 +1,35 @@
+# FuneralFair
+
+> FuneralFair is a UK funeral price comparison site. We help families compare funeral directors near them with real, published prices — no commission, no account required. Our goal is to make one of the hardest decisions a family faces a little easier and fairer.
+
+## Key pages
+
+- [Homepage](https://funeralfair.co.uk/): Search for funeral directors by postcode or town
+- [UK Funeral Cost Guide](https://funeralfair.co.uk/funeral-costs/uk): Breakdown of what a funeral costs in the UK, including attended funerals and direct cremation
+- [What to Do When Someone Dies](https://funeralfair.co.uk/what-to-do-when-someone-dies): Step-by-step guide for families in the UK
+- [Government Grants & Financial Help](https://funeralfair.co.uk/government-grants): Information on the Funeral Expenses Payment and other financial support
+- [Plan Ahead](https://funeralfair.co.uk/plan-ahead): Guide to pre-planning a funeral
+- [How We Rank Directors](https://funeralfair.co.uk/how-we-rank): Our methodology for listing and ordering funeral directors
+- [For Funeral Directors](https://funeralfair.co.uk/for-funeral-directors): Information for funeral directors who want to claim or upgrade their listing
+- [About FuneralFair](https://funeralfair.co.uk/about): About the site and our mission
+
+## City pages — funeral directors by location
+
+- [Funeral Directors in London](https://funeralfair.co.uk/funeral-directors/london)
+- [Funeral Directors in Manchester](https://funeralfair.co.uk/funeral-directors/manchester)
+- [Funeral Directors in Birmingham](https://funeralfair.co.uk/funeral-directors/birmingham)
+- [Funeral Directors in Liverpool](https://funeralfair.co.uk/funeral-directors/liverpool)
+- [Funeral Directors in Leeds](https://funeralfair.co.uk/funeral-directors/leeds)
+- [Funeral Directors in Sheffield](https://funeralfair.co.uk/funeral-directors/sheffield)
+- [Funeral Directors in Bristol](https://funeralfair.co.uk/funeral-directors/bristol)
+- [Funeral Directors in Glasgow](https://funeralfair.co.uk/funeral-directors/glasgow)
+- [Funeral Directors in Edinburgh](https://funeralfair.co.uk/funeral-directors/edinburgh)
+- [Funeral Directors in Cardiff](https://funeralfair.co.uk/funeral-directors/cardiff)
+- [Funeral Directors in Nottingham](https://funeralfair.co.uk/funeral-directors/nottingham)
+- [Funeral Directors in Newcastle](https://funeralfair.co.uk/funeral-directors/newcastle)
+
+## Blog
+
+- [What is Direct Cremation?](https://funeralfair.co.uk/blog/what-is-direct-cremation)
+- [How Much Does a Funeral Cost in the UK?](https://funeralfair.co.uk/blog/how-much-does-a-funeral-cost)
+- [How to Compare Funeral Directors](https://funeralfair.co.uk/blog/how-to-compare-funeral-directors)

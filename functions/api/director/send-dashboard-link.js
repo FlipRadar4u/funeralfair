@@ -16,7 +16,7 @@ async function sendLink(director, brevoKey) {
 <div style="max-width:520px;margin:0 auto;padding:40px 20px;">
   <div style="margin-bottom:32px;">
     <a href="https://funeralfair.co.uk" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-      <img src="https://funeralfair.co.uk/logo.png" alt="FuneralFair" width="40" height="40" style="display:block;" />
+      <img src="https://funeralfair.co.uk/logo.webp" alt="FuneralFair" width="40" height="40" style="display:block;" />
       <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px;"><span style="color:#2c2c2c;">Funeral</span><span style="color:#7a9e7e;">Fair</span></span>
     </a>
   </div>

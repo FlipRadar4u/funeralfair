@@ -245,7 +245,7 @@ export default function CityPage() {
       '@type': 'ItemList',
       name: `Funeral Directors in ${cityData.name}`,
       url: `https://funeralfair.co.uk/funeral-directors/${city}`,
-      numberOfItems: directors.length,
+      numberOfItems: Math.min(directors.length, 10),
       itemListElement: directors.slice(0, 10).map((d, i) => ({
         '@type': 'ListItem',
         position: i + 1,
@@ -276,7 +276,7 @@ export default function CityPage() {
       document.getElementById('city-faq-schema')?.remove()
       document.getElementById('city-itemlist-schema')?.remove()
     }
-  }, [loading, directors, cityData])
+  }, [loading, directors, cityData, city])
 
   // BreadcrumbList schema
   useEffect(() => {

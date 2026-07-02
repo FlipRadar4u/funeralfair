@@ -11,7 +11,7 @@ function makePin(fill) {
   return L.divIcon({ className: '', html: svg, iconSize: [22, 30], iconAnchor: [11, 30], popupAnchor: [0, -32] })
 }
 
-const PIN_DEFAULT  = makePin('#7a9e7e')
+const PIN_DEFAULT  = makePin('#4d7a51')
 const PIN_FEATURED = makePin('#5a7e5e')
 
 const PIN_USER = L.divIcon({
@@ -68,7 +68,7 @@ export default function DirectorsMap({ directors, onView, userCoords, radiusMile
           <Circle
             center={[userCoords.lat, userCoords.lng]}
             radius={radiusMetres}
-            pathOptions={{ color: '#7a9e7e', fillColor: '#7a9e7e', fillOpacity: 0.06, weight: 1.5, dashArray: '5 5' }}
+            pathOptions={{ color: '#4d7a51', fillColor: '#4d7a51', fillOpacity: 0.06, weight: 1.5, dashArray: '5 5' }}
           />
           <Marker position={[userCoords.lat, userCoords.lng]} icon={PIN_USER} zIndexOffset={1000}>
             <Popup minWidth={130}>
@@ -82,7 +82,7 @@ export default function DirectorsMap({ directors, onView, userCoords, radiusMile
           <Popup minWidth={190}>
             <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
               {d.is_featured && (
-                <p style={{ fontSize: 10, fontWeight: 700, color: '#7a9e7e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#4d7a51', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                   Featured
                 </p>
               )}
@@ -102,7 +102,7 @@ export default function DirectorsMap({ directors, onView, userCoords, radiusMile
               <button
                 onClick={() => onView(d.id)}
                 style={{
-                  width: '100%', padding: '8px 0', background: '#7a9e7e', color: '#fff',
+                  width: '100%', padding: '8px 0', background: '#4d7a51', color: '#fff',
                   border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 12,
                   cursor: 'pointer', letterSpacing: '0.01em',
                 }}

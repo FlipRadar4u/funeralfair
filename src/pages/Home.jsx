@@ -5,7 +5,6 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import GeoSuggestion from '../components/GeoSuggestion'
 import { useGeoSuggestion } from '../hooks/useGeoSuggestion'
-import { useGeoCity } from '../hooks/useGeoCity'
 
 const CHECK_ICON = (
   <svg className="w-4 h-4 text-sage shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -121,9 +120,9 @@ export default function Home() {
   const [directorCount, setDirectorCount] = useState(null)
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const [heroFocused, setHeroFocused] = useState(false)
+  const [geoEnabled, setGeoEnabled] = useState(false)
   const navigate = useNavigate()
-  const geoSuggestion = useGeoSuggestion()
-  const geoCity = useGeoCity()
+  const { city: geoCity, suggestion: geoSuggestion } = useGeoSuggestion({ enabled: geoEnabled })
 
   useEffect(() => {
     setPageMeta({
@@ -163,6 +162,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-cream">
       <Navbar />
 
+      <main className="flex-1">
+
       {/* ── Hero ── */}
       <section className="relative isolate flex flex-col items-center text-center px-5 sm:px-6 pt-14 pb-14 sm:pt-28 sm:pb-28 overflow-hidden">
 
@@ -175,17 +176,17 @@ export default function Home() {
           {/* Subtle dot grid texture */}
           <div
             className="absolute inset-0 opacity-[0.12]"
-            style={{ backgroundImage: 'radial-gradient(circle, #7a9e7e 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+            style={{ backgroundImage: 'radial-gradient(circle, #4d7a51 1px, transparent 1px)', backgroundSize: '28px 28px' }}
           />
           {/* Hero illustration — right side on large screens */}
           <img
-            src="/hero-bg.png"
+            src="/hero-bg.webp"
             alt=""
             className="hidden lg:block absolute right-0 top-0 h-full w-auto object-contain object-right select-none"
           />
         </div>
 
-        <span className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full bg-sage-light border border-sage-border text-sage text-xs font-semibold tracking-widest uppercase">
+        <span className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full bg-white border border-sage-border text-sage text-xs font-semibold tracking-widest uppercase">
           UK funeral price comparison
         </span>
 
@@ -204,7 +205,7 @@ export default function Home() {
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              onFocus={() => setHeroFocused(true)}
+              onFocus={() => { setHeroFocused(true); setGeoEnabled(true) }}
               onBlur={() => setTimeout(() => setHeroFocused(false), 150)}
               placeholder="Enter your postcode or town…"
               className={`w-full px-4 py-3.5 rounded-xl border border-warm-border bg-white text-charcoal placeholder-muted text-base focus:outline-none focus:ring-2 focus:ring-sage shadow-sm ${geoCity ? 'pr-10' : ''}`}
@@ -214,7 +215,7 @@ export default function Home() {
                 type="button"
                 title={`Use my location (${geoCity})`}
                 onClick={() => { setLocation(geoCity); navigate(`/search?location=${encodeURIComponent(geoCity)}`) }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-sage transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-sage transition-colors flex items-center justify-center w-10 h-10"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
@@ -286,9 +287,11 @@ export default function Home() {
           {/* Image — left side */}
           <div className="w-1/2 shrink-0 overflow-visible">
             <img
-              src="/how-it-works.png"
+              src="/how-it-works.webp"
               alt=""
               className="w-full object-contain select-none"
+              width="647"
+              height="731"
             />
           </div>
 
@@ -393,7 +396,7 @@ export default function Home() {
               <div className="px-8 py-10 bg-sage-light flex flex-col justify-center gap-5">
                 <div>
                   <p className="text-base font-bold text-charcoal mb-1.5">Ready to get started?</p>
-                  <p className="text-sm text-muted leading-relaxed">
+                  <p className="text-sm text-charcoal-soft leading-relaxed">
                     Already listed? Claim your listing to verify your details and show families you're active.
                   </p>
                 </div>
@@ -417,6 +420,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      </main>
 
       <Footer />
     </div>

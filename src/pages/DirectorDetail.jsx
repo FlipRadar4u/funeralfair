@@ -801,6 +801,18 @@ export default function DirectorDetail() {
                 </tbody>
               </table>
 
+              {/* SPL link */}
+              {director.spl_url && (
+                <a
+                  href={director.spl_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-sage font-medium hover:underline mt-1 mb-2"
+                >
+                  View their standardised price list →
+                </a>
+              )}
+
               {/* Disclaimer */}
               <div className="flex items-start gap-2 mt-2 mb-6 py-3.5 border-t border-warm-border">
                 <span className="text-muted shrink-0 mt-0.5">{INFO_ICON}</span>

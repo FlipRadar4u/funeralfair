@@ -7,7 +7,7 @@ export async function onRequestGet(context) {
 
   const [dirRes, revRes] = await Promise.all([
     fetch(
-      `${SUPABASE_URL}/rest/v1/funeral_directors?id=eq.${id}&select=id,name,town,postcode,address,phone,website,lat,lng,attended_price,cremation_price,nafd_member,saif_member,is_featured,verified,last_updated,google_rating,google_reviews,photos,email,claimed_at,description,opening_hours,facebook_url,instagram_url,special_offer,specialisms,faqs`,
+      `${SUPABASE_URL}/rest/v1/funeral_directors?id=eq.${id}&select=id,name,town,postcode,address,phone,website,lat,lng,attended_price,cremation_price,spl_url,nafd_member,saif_member,is_featured,verified,last_updated,google_rating,google_reviews,photos,email,claimed_at,description,opening_hours,facebook_url,instagram_url,special_offer,specialisms,faqs`,
       { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } }
     ),
     fetch(

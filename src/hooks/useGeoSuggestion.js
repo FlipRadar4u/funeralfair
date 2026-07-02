@@ -1,9 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-export function useGeoSuggestion() {
+export function useGeoSuggestion({ enabled = false } = {}) {
+  const [city, setCity] = useState(null)
   const [suggestion, setSuggestion] = useState(null)
+  const startedRef = useRef(false)
 
   useEffect(() => {
+    if (!enabled || startedRef.current) return
+    startedRef.current = true
+
     let cancelled = false
     async function load() {
       try {
@@ -11,6 +16,8 @@ export function useGeoSuggestion() {
         if (!geoRes.ok || cancelled) return
         const geo = await geoRes.json()
         if (!geo.lat || !geo.lng || !geo.city || cancelled) return
+
+        setCity(geo.city)
 
         const dirRes = await fetch(`/api/directors?lat=${geo.lat}&lng=${geo.lng}&radius=15`)
         if (!dirRes.ok || cancelled) return
@@ -33,7 +40,7 @@ export function useGeoSuggestion() {
     }
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [enabled])
 
-  return suggestion
+  return { city, suggestion }
 }

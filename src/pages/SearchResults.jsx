@@ -283,7 +283,7 @@ export default function SearchResults() {
 
   const [inputValue,    setInputValue]   = useState(location)
   const [searchFocused, setSearchFocused] = useState(false)
-  const geoSuggestion = useGeoSuggestion()
+  const { suggestion: geoSuggestion } = useGeoSuggestion({ enabled: true })
   const geoCity = useGeoCity()
   const [results,       setResults]      = useState([])
   const [loading,       setLoading]      = useState(false)
@@ -350,7 +350,8 @@ export default function SearchResults() {
           // ── Proximity search ──────────────────────────────────────────────
           setLoadingLabel('Finding directors near you…')
 
-          const apiRes = await fetchWithTimeout('/api/directors')
+          // Server-side bounding box — avoids downloading the full director table
+          const apiRes = await fetchWithTimeout(`/api/directors?lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS_MILES}`)
           if (!apiRes.ok) { setFetchError(`Error loading directors (${apiRes.status})`); return }
           if (cancelled) return
           const directors = await apiRes.json()

@@ -73,7 +73,7 @@ export default function CookieBanner() {
       >
         <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, flex: 1, minWidth: '200px' }}>
           We use cookies to understand how visitors use FuneralFair.{' '}
-          <Link to="/privacy" style={{ color: '#7a9e7e', textDecoration: 'underline' }}>Privacy policy</Link>
+          <Link to="/privacy" style={{ color: '#a8c5aa', textDecoration: 'underline' }}>Privacy policy</Link>
         </p>
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <button
@@ -90,7 +90,7 @@ export default function CookieBanner() {
             onClick={accept}
             style={{
               padding: '7px 16px', fontSize: '13px', fontWeight: 600,
-              background: '#7a9e7e', border: 'none', color: '#fff',
+              background: '#4d7a51', border: 'none', color: '#fff',
               borderRadius: '8px', cursor: 'pointer',
             }}
           >

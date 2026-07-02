@@ -135,14 +135,14 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
           {director.claimed_at ? (
             <div style={{ background: '#edf3ee', border: '1px solid #c5d9c7', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
               <div>
-                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7a9e7e', textTransform: 'uppercase', letterSpacing: '1px' }}>✓ Listing claimed</p>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#4d7a51', textTransform: 'uppercase', letterSpacing: '1px' }}>✓ Listing claimed</p>
                 <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#2c2c2c' }}>
                   {new Date(director.claimed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
               {director.claim_token && (
                 <a href={`/dashboard/${director.claim_token}`} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: '12px', fontWeight: 600, color: '#7a9e7e', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  style={{ fontSize: '12px', fontWeight: 600, color: '#4d7a51', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   View dashboard →
                 </a>
               )}
@@ -155,7 +155,7 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
               </div>
               {director.claim_token && (
                 <a href={`/claim/${director.claim_token}`} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: '12px', fontWeight: 600, color: '#7a9e7e', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  style={{ fontSize: '12px', fontWeight: 600, color: '#4d7a51', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   View claim page →
                 </a>
               )}
@@ -175,14 +175,14 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
                 onClick={() => setField(key, !form[key])}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
-                  borderRadius: '10px', border: `2px solid ${form[key] ? '#7a9e7e' : '#e5e0d8'}`,
+                  borderRadius: '10px', border: `2px solid ${form[key] ? '#4d7a51' : '#e5e0d8'}`,
                   background: form[key] ? '#edf3ee' : '#fff', cursor: 'pointer', textAlign: 'left',
                   transition: 'all 0.15s',
                 }}
               >
                 <div style={{
                   width: '36px', height: '20px', borderRadius: '10px', position: 'relative', flexShrink: 0,
-                  background: form[key] ? '#7a9e7e' : '#ccc', transition: 'background 0.15s',
+                  background: form[key] ? '#4d7a51' : '#ccc', transition: 'background 0.15s',
                 }}>
                   <div style={{
                     position: 'absolute', top: '2px', left: form[key] ? '18px' : '2px',
@@ -197,7 +197,7 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
 
           {/* Prices */}
           {director.manually_checked && (
-            <div style={{ background: '#edf3ee', border: '1px solid #c5d9c7', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#7a9e7e', fontWeight: 600 }}>
+            <div style={{ background: '#edf3ee', border: '1px solid #c5d9c7', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#4d7a51', fontWeight: 600 }}>
               ✓ Prices verified by researcher
             </div>
           )}
@@ -253,7 +253,7 @@ function EditModal({ director, pw, onSave, onDelete, onClose }) {
             onClick={save}
             disabled={saving}
             style={{
-              flex: 1, padding: '11px', background: saving ? '#aaa' : '#7a9e7e', color: '#fff',
+              flex: 1, padding: '11px', background: saving ? '#aaa' : '#4d7a51', color: '#fff',
               fontWeight: 700, fontSize: '14px', borderRadius: '10px', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
             }}
           >
@@ -287,7 +287,7 @@ function InlineField({ label, value, onChange, type = 'text' }) {
           fontSize: '14px', color: '#1a1a1a', background: '#f7f4f0', boxSizing: 'border-box',
           outline: 'none',
         }}
-        onFocus={e => e.target.style.borderColor = '#7a9e7e'}
+        onFocus={e => e.target.style.borderColor = '#4d7a51'}
         onBlur={e => e.target.style.borderColor = '#e5e0d8'}
       />
     </div>

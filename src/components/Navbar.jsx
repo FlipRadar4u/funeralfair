@@ -25,7 +25,7 @@ export default function Navbar() {
         <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
 
           <Link to="/" className="flex items-center gap-1 select-none" onClick={() => setMenuOpen(false)}>
-            <img src="/logo.png" alt="" className="h-10 w-auto" />
+            <img src="/logo.webp" alt="" className="h-10 w-auto" width="100" height="140" />
             <span className="flex items-baseline gap-0.5">
               <span className="text-xl font-bold tracking-tight text-charcoal">Funeral</span>
               <span className="text-xl font-bold tracking-tight text-sage">Fair</span>

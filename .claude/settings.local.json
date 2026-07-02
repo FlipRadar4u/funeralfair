@@ -63,7 +63,13 @@
       "Bash(ls src/assets/)",
       "Bash(ls *.jpg *.jpeg *.png *.webp)",
       "Bash(Copy-Item *)",
-      "Skill(code-review)"
+      "Skill(code-review)",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\"C:\\\\Users\\\\Adamj\\\\Downloads\\\\funeralfair\\\\public\\\\how-it-works.png\"\\); \"Width: $\\($img.Width\\), Height: $\\($img.Height\\)\"; $img.Dispose\\(\\))",
+      "Bash(git check-ignore *)",
+      "Bash(supabase --version)",
+      "Read(//c/Users/Adamj/.supabase/**)",
+      "Bash(grep -oiE \"\\(attended|traditional|full\\)[^£]{0,80}£[0-9,.]+\")",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\"$pwd\\\\public\\\\og-image.png\"\\); Write-Host \"source: $\\($img.Width\\)x$\\($img.Height\\)\"; $enc = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders\\(\\) | Where-Object {$_.MimeType -eq 'image/jpeg'}; $p = New-Object System.Drawing.Imaging.EncoderParameters\\(1\\); $p.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter\\([System.Drawing.Imaging.Encoder]::Quality, [long]82\\); $img.Save\\(\"$pwd\\\\public\\\\og-image.jpg\", $enc, $p\\); $img.Dispose\\(\\); $old = \\(Get-Item \"$pwd\\\\public\\\\og-image.png\"\\).Length; $new = \\(Get-Item \"$pwd\\\\public\\\\og-image.jpg\"\\).Length; Write-Host \\(\"png {0:N0} bytes -> jpg {1:N0} bytes\" -f $old, $new\\))"
     ]
   }
 }
