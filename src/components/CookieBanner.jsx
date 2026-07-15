@@ -24,6 +24,10 @@ export default function CookieBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    // Skip during prerender: headless Puppeteer (navigator.webdriver === true)
+    // would otherwise bake the banner into the static HTML, leaving a dead
+    // duplicate underneath the live React banner that can never be dismissed.
+    if (navigator.webdriver) return
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'accepted') { loadGA(); return }
     if (stored === 'declined') return
