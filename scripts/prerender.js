@@ -36,7 +36,14 @@ const STATIC_ROUTES = [
   '/plan-ahead',
   '/privacy',
   '/compare',
-  '/',
+  // NOT '/' — dist/index.html doubles as the SPA fallback (_redirects
+  // `/* /index.html 200`). Prerendering it bakes homepage content and
+  // canonical="/" into the fallback, so every non-prerendered route (all
+  // director pages, cities outside CITIES) would tell Google it is a
+  // duplicate of the homepage. Keep index.html as the pristine Vite shell.
+  // Don't "fix" this by pointing the fallback at another .html file —
+  // Cloudflare Pages strips .html and 308s, which loops the whole site.
+  // See ERRORS.md 2026-07-22.
 ]
 
 // Phase 2 — city pages. `/direct-cremation/derby` 301-redirects to the
