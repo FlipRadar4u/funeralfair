@@ -261,7 +261,7 @@ export default function CostGuide() {
     setPageMeta({
       title: 'UK Funeral Costs 2026 — Average Prices Explained | FuneralFair',
       description: 'How much does a funeral cost in the UK in 2026? Average prices for direct cremation (£1,695), attended cremation (£4,400), and burial — plus 7 ways to reduce costs.',
-      path: '/cost-guide',
+      path: '/funeral-costs/uk',
     })
 
     const articleEl = document.createElement('script')
