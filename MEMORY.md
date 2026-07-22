@@ -1,5 +1,38 @@
 # FuneralFair — Project Memory
 
+## Session 2026-07-22 — SESSION SUMMARY (Batch 8, price-data cleanup, Co-op refill, town pages)
+
+**Worked on:** Batch 8 review + import, a major price-data quality problem found while planning traffic work, the Co-op refill that followed, a self-inflicted outage, and the first phase of the traffic plan.
+
+**Completed (all live):**
+1. **Batch 8 imported** (`Adam Jones - Project- 2026 (2) 22nd july.xlsx`, sheet `FuneralFair_SPL_Batch8`, rows #1001–1200) — 187 updated, 13 skipped, 0 errors, verified row-by-row. Cleanest batch yet: **0 "Duplicate" notes, 0 aggregator sources** (both previously recurring failures). Telling the researcher off worked.
+2. **Batch 9 generated and sent** — 200 fresh rows #1201–1400, 0 overlap with anything previously sent. The stale 10-June `FuneralFair-Batch-9.xlsx` and `-10.xlsx` were deleted: the old Batch 9 had 59/200 rows already sent and 57 already verified, so sending it would have paid twice and risked overwriting good data. **Always regenerate from `scraper/generate-batch.js`; never reuse the June files.**
+3. **851 bad prices cleared.** Found 858 listings where `cremation_price` exactly equalled `attended_price` — impossible, and live on the site. Co-op (553) had BOTH prices inflated (median attended £3,970 vs £2,450 verified) so both were nulled; Dignity and others (298) had a sound attended price and only the cremation duplicated. Audit trail in `suspect-prices.csv`.
+4. **Co-op refill: 552 of 553 branches** re-sourced from their own SPL PDFs via `scraper/refill-coop-prices.js`. Median attended £2,450 — exactly the researcher-verified figure — and £1,445 direct cremation everywhere, matching hand-checked branches. Only Co-op Barnstaple failed (no SPL link on its page).
+5. **Director-entered prices now protected** (`functions/api/claim/[token].js`, commit `4f46192`). The claim API never set `manually_checked`, so all 16 claimed listings looked like bulk-fill junk and were one query away from being wiped. Backfilled the 15 sound ones; Adam corrected Wells (£2,765) himself.
+6. **Town pages 46 → 119** (commit `67cf96b`) — 73 towns added, 146 new indexable pages surfacing ~1,200 directors. First phase of the traffic plan.
+7. **Deployed** — 10 commits pushed after a month with nothing live; 250/250 pages prerendered.
+
+**Key decisions:**
+- **`manually_checked` is the only trust signal on price data, and it now means "authoritative provenance", not strictly "a researcher read it".** Director-entered and SPL-PDF-parsed prices both set it. Any bulk price operation must exclude `manually_checked = true` AND `claimed_at IS NOT NULL`.
+- **Never publish stats across all rows.** Use the verified subset: median attended **£2,545**, median direct cremation **£1,450**, n=1,689. Whole-table figures were badly skewed before the cleanup.
+- **Staged the town pages at 4+ priced directors**, holding 76 towns with exactly 3. A 3-firm page isn't spam but is the weakest content, and 306 pages landing at once on a young domain looks worse than 146 strong ones. Revisit after Batch 9.
+- **Data will never be "complete"** — 892 directors have no website, so the researcher route tops out near 77%. Stop gating the SEO build on completeness.
+
+**Incident (my fault):** deploying the prerender step exposed that `dist/index.html` doubles as the SPA fallback, so every non-prerendered route served homepage HTML with `canonical="/"`. Fixing it by pointing the fallback at `app.html` **took the whole site down for ~6 minutes** — Cloudflare Pages strips `.html`, turning the rewrite into a 308 loop. Reverted, then fixed properly by not prerendering `/`. **Routing changes now go to `--branch=preview` first.** Logged in ERRORS.md.
+
+**In progress / not done:**
+- Batch 9 with the researcher; 76 three-director towns awaiting more coverage.
+- Co-op Barnstaple unpriced; `price-review-list.csv` outliers still unreviewed.
+- `.wrangler/` is untracked and should be added to `.gitignore`.
+
+**Next session priorities:**
+1. **Director pages — the big one.** 4,262 pages at `/director/<uuid>`: no keywords in the URL, no prerendered HTML, and 97% of the sitemap. Needs a slug migration with 301s and HTML generated from Supabase directly (Puppeteer won't scale). Plan before building.
+2. Import Batch 9 on return; re-run `scraper/generate-city-entries.js` to add towns that reach 4+.
+3. **The PR study is unblocked** — the verified figures are defensible now. This is what earns the links that make the new town pages rank.
+4. Check why York didn't qualify as a city page.
+
+
 ## Session 2026-07-15 — SESSION SUMMARY (Batch 6, data cleanup, SEO prep)
 
 **Worked on:** Cookie-banner bug fix, corrected Batch 6 import, a cascade of data-quality fixes it uncovered, a family enquiry, and programmatic-SEO groundwork (planning + data prep).
