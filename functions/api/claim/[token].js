@@ -291,6 +291,14 @@ export async function onRequestPost(context) {
     if (updates[key] === null && key !== 'claimed_at' && key !== 'description' && !featuredKeys.has(key)) delete updates[key]
   }
 
+  // A price the director entered themselves is the most authoritative source we
+  // have, so flag it as checked. Without this it is indistinguishable from a
+  // chain bulk fill and gets caught by data-cleanup scripts — see the 851-row
+  // duplicate-price cleanup on 2026-07-22, which had to exclude claimed rows by hand.
+  if ('attended_price' in updates || 'cremation_price' in updates) {
+    updates.manually_checked = true
+  }
+
   const updateRes = await fetch(
     `${SUPABASE_URL}/rest/v1/funeral_directors?claim_token=eq.${encodeURIComponent(token)}`,
     {
